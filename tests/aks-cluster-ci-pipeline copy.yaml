@@ -1,0 +1,75 @@
+trigger:
+  branches:
+    include:
+    - main
+    - features/*
+  paths:
+    include:
+    - aks-cluster/aks-cluster-iac
+
+variables:
+- name: currentWorkingDirectory
+  value: "$(System.DefaultWorkingDirectory)/aks-cluster/aks-cluster-iac"
+
+pool:
+  name: 'Azure Pipelines'
+
+stages:
+
+- stage: Validate
+  displayName: 'QA Code'
+  jobs:
+  - job: Linter
+    displayName: 'Linter Test'
+    steps:
+    - task: TerraformCLI@0
+      displayName: 'Terraform Init with Plugin'
+      inputs:
+        command: 'init'
+        backendType: 'azurerm'
+        backendServiceArm: 'Terraform Installer'
+        backendAzureRmResourceGroupName: 'terraform-global-state-files'
+        backendAzureRmStorageAccountName: 'tfglobalstatefilessa'
+        backendAzureRmContainerName: 'tfstatefilescontainername'
+        backendAzureRmKey: 'aksclustermoduleci.tfstate'
+        allowTelemetryCollection: false
+    - task: Bash@3
+      displayName: Dump Variables
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "My current working directory is $(pwd)."
+          echo "It's contents are:"
+          ls -la
+          echo "MY GODDAMN FUCKING VARIABLES ARE FUCKING AS FOLLOWS:"
+          env | sort
+    - task: TerraformCLI@0
+      displayName: 'Terraform Validate with Plugin'
+      inputs:
+        command: 'validate'
+        workingDirectory: '$currentWorkingDirectory'
+        allowTelemetryCollection: false
+- stage: Plan
+  jobs:
+  - job: Speculative
+    displayName: 'Run Speculative Plan'
+    steps:
+    - task: TerraformCLI@0
+      displayName: Terraform Plan
+      inputs:
+        command: 'plan'
+        workingDirectory: '$(System.DefaultWorkingDirectory)'
+        environmentServiceName: 'Terraform Installer'
+        allowTelemetryCollection: false
+- stage: Apply
+  jobs:
+  - job: Deploy
+    displayName: 'Deploy AKS Cluster Infrastructure'
+    steps:
+    - task: TerraformCLI@0
+      displayName: 'Terraform Apply'
+      inputs:
+        command: 'apply'
+        workingDirectory: '$(System.DefaultWorkingDirectory)'
+        environmentServiceName: 'Terraform Installer'
+        allowTelemetryCollection: false

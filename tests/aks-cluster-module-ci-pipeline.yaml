@@ -1,0 +1,59 @@
+trigger:
+  branches:
+    include:
+    - main
+    - features/*
+#  paths:
+#    include:
+#    - modules/aks-cluster
+
+variables:
+- name: terraformWorkingDirectory
+  value: "$(System.DefaultWorkingDirectory)"
+
+pool:
+  name: 'Azure Pipelines'
+
+stages:
+
+- stage: Validate
+  displayName: 'QA Code'
+  jobs:
+  - job: Linter
+    displayName: 'Linter Test'
+    steps:
+    - task: TerraformInstaller@0
+      inputs:
+        terraformVersion: 'latest'
+    - task: TerraformCLI@0
+      displayName: 'Terraform Init with Plugin'
+      inputs:
+        command: 'init'
+        workingDirectory: '$(terraformWorkingDirectory)'
+        backendType: 'azurerm'
+        backendServiceArm: 'Terraform Installer'
+        backendAzureRmResourceGroupName: 'terraform-global-state-files'
+        backendAzureRmStorageAccountName: 'tfglobalstatefilessa'
+        backendAzureRmContainerName: 'tfstatefilescontainername'
+        backendAzureRmKey: 'aksclustermoduleci.tfstate'
+        allowTelemetryCollection: false
+    - task: TerraformCLI@0
+      displayName: 'Terraform Validate'
+      inputs:
+        command: 'validate'
+        workingDirectory: '$(terraformWorkingDirectory)'
+        allowTelemetryCollection: false
+    - task: TerraformCLI@0
+      displayName: 'Terraform Speculative Plan'
+      inputs:
+        command: 'plan'
+        workingDirectory: '$(terraformWorkingDirectory)'
+        environmentServiceName: 'Terraform Installer'
+        allowTelemetryCollection: false
+    - task: TerraformCLI@0
+      displayName: Terraform Apply
+      inputs:
+        command: 'apply'
+        workingDirectory: '$(terraformWorkingDirectory)'
+        environmentServiceName: 'Terraform Installer'
+        allowTelemetryCollection: true
