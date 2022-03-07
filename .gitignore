@@ -30,3 +30,4 @@ override.tf.json
 
 .vscode/
 .history/
+*.lock.hcl
