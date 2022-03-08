@@ -35,7 +35,7 @@ stages:
         backendAzureRmResourceGroupName: 'terraform-global-state-files'
         backendAzureRmStorageAccountName: 'tfglobalstatefilessa'
         backendAzureRmContainerName: 'tfstatefilescontainername'
-        backendAzureRmKey: 'aksclustermoduleci.tfstate'
+        backendAzureRmKey: 'helmapptest.tfstate'
         allowTelemetryCollection: false
     - task: TerraformCLI@0
       displayName: 'Terraform Validate'
