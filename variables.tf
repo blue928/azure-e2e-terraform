@@ -3,7 +3,7 @@
 # locals {} block below. 
 variable "project_name" {
   type    = string
-  default = "fulle2etestcomp"
+  default = "tenfortyone"
 }
 
 # Default location of all resources created by Terraform. Choose

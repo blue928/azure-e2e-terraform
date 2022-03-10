@@ -15,7 +15,7 @@ terraform {
     resource_group_name  = "terraform-global-state-files"
     storage_account_name = "tfglobalstatefilessa"
     container_name       = "tfstatefilescontainername"
-    key                  = "helmapptest.tfstate"
+    key                  = "tenfortyone.tfstate"
   }
 }
 
@@ -42,7 +42,7 @@ provider "azurerm" {
 data "azurerm_kubernetes_cluster" "default" {
   depends_on          = [module.aks-cluster] # refresh cluster state before reading
   name                = "${var.project_name}-cluster"
-  resource_group_name = module.default-rg.resource_group_name
+  resource_group_name = module.azure-rg.resource_group_name
 }
 
 provider "kubernetes" {
