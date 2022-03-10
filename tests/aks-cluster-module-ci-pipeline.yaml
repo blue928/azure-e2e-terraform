@@ -32,10 +32,10 @@ stages:
         workingDirectory: '$(terraformWorkingDirectory)'
         backendType: 'azurerm'
         backendServiceArm: 'Terraform Installer'
-        backendAzureRmResourceGroupName: 'terraform-global-state-files'
-        backendAzureRmStorageAccountName: 'tfglobalstatefilessa'
-        backendAzureRmContainerName: 'tfstatefilescontainername'
-        backendAzureRmKey: 'aksclustermoduleci.tfstate'
+        #backendAzureRmResourceGroupName: 'terraform-global-state-files'
+        #backendAzureRmStorageAccountName: 'tfglobalstatefilessa'
+        #backendAzureRmContainerName: 'tfstatefilescontainername'
+        #backendAzureRmKey: 'cgraphics.tfstate'
         allowTelemetryCollection: false
     - task: TerraformCLI@0
       displayName: 'Terraform Validate'

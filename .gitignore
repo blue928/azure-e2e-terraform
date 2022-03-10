@@ -28,6 +28,16 @@ override.tf.json
 # Include tfplan files to ignore the plan output of command: terraform plan -out=tfplan
 # example: *tfplan*
 
-.vscode/
-.history/
-*.lock.hcl
+# Ignore new MacOs ._* files
+._*
+
+# Ignore credentials
+*creden*
+sp.sh
+testcommands.azcli
+
+agent/
+helmcharts/
+utility/
+app/
+*.sql
