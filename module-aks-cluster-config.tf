@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------------------------------------------------------------
 module "aks-cluster" {
 
-  source = "github.com/blue928/azure-aks-terraform-module"
+  source = "github.com/blue928/terraform-azurerm-aks-cluster-module"
 
   resource_group_name = module.azure-rg.resource_group_name
   location            = module.azure-rg.resource_group_location
