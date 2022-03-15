@@ -12,10 +12,10 @@ terraform {
   }
 
   backend "azurerm" {
-    resource_group_name  = "terraform-global-state-files"
-    storage_account_name = "tfglobalstatefilessa"
-    container_name       = "tfstatefilescontainername"
-    key                  = "tenfortyone.tfstate"
+    resource_group_name  = "terraform-storage-rg"
+    storage_account_name = "terraformstateimagine"
+    container_name       = "terraformstatefiles"
+    key                  = "stihlclonetest.tfstate"
   }
 }
 

@@ -24,7 +24,7 @@ module "mysql-flexible-server" {
   fs_db_server_administrator_password = "T3stpwd@12E"
 
   # Production database name
-  fs_db_server_prod_db_name = "tenfortyoneproductiondb"
+  fs_db_server_prod_db_name = "stihlclonetestproductiondb"
 
   # Firewall access
   fs_fw_start_ip_address = "0.0.0.0"
