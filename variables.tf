@@ -3,7 +3,7 @@
 # locals {} block below. 
 variable "project_name" {
   type    = string
-  default = "stihlclonetest"
+  default = "existing"
 }
 
 # Default location of all resources created by Terraform. Choose

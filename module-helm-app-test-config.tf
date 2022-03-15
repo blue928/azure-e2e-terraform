@@ -5,12 +5,12 @@ module "helm-app-module" {
     module.mysql-flexible-server,
   ]
   source          = "github.com/blue928/helm-app-terraform-module"
-  #externalDatabase_host = "stihlclonetest-flexible-server.mysql.database.azure.com"
+  #externalDatabase_host = "existing-flexible-server.mysql.database.azure.com"
   externalDatabase_host         = module.mysql-flexible-server.fs_db_server_fqdn
   #externaldbprod_database = "${module.mysql-flexible-server.production_db_name}"
-  externalDatabase_database = "stihlclonetestproductiondb"
+  externalDatabase_database = "existingproductiondb"
   externalDatabase_user     = "testadmin"
   externalDatabase_password = "T3stpwd@12E"
-  helm_app_name = "stihlclonetest"
-  cluster_namespace = "stihlclonetest-ns"
+  helm_app_name = "existing"
+  cluster_namespace = "existing-ns"
 }

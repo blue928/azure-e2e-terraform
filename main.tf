@@ -15,7 +15,7 @@ terraform {
     resource_group_name  = "terraform-storage-rg"
     storage_account_name = "terraformstateimagine"
     container_name       = "terraformstatefiles"
-    key                  = "stihlclonetest.tfstate"
+    key                  = "existing.tfstate"
   }
 }
 
