@@ -2,7 +2,8 @@
 # DEPLOY THE MYSQL FLEXIBLE SERVER AND PRODUCTION DATABASE
 # ---------------------------------------------------------------------------------------------------------------------
 locals {
-  fs_db_server_sku_name     = "GP_Standard_D2ds_v4" #"B_Standard_B1s" # see this issue: https://github.com/hashicorp/terraform-provider-azurerm/issues/15538
+  #fs_db_server_sku_name     = "GP_Standard_D2ds_v4" #"B_Standard_B1s" # see this issue: https://github.com/hashicorp/terraform-provider-azurerm/issues/15538
+  fs_db_server_sku_name = "B_Standard_B1s"
   fs_db_server_name         = "${var.project_name}-flexible-server"
   fs_db_server_prod_db_name = "${var.project_name}productiondb"
   require_secure_transport  = "OFF"
