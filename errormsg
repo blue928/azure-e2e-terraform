@@ -1,0 +1,7 @@
+╷
+│ Error: waiting for creation of Flexible Server: (Name "stihlclonetest-flexible-server" / Resource Group "stihlclonetest-rg"): Code="HaNotSupportedForBurstableEdition" Message="High Availability is not supported for server of burstable edition."
+│ 
+│   with module.mysql-flexible-server.azurerm_mysql_flexible_server.fs_db,
+│   on .terraform/modules/mysql-flexible-server/main.tf line 15, in resource "azurerm_mysql_flexible_server" "fs_db":
+│   15: resource "azurerm_mysql_flexible_server" "fs_db" {
+│ 
