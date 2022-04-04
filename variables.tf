@@ -16,7 +16,7 @@ variable "location" {
 
 # Variables for module arguments
 # module-externaldns-config.tf 
-variable "cluster_namespace" {
+variable "externaldns_namespace" {
   type    = string
   default = "stihlclonetest.com"
 }
