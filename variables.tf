@@ -18,7 +18,7 @@ variable "location" {
 # module-externaldns-config.tf 
 variable "externaldns_namespace" {
   type    = string
-  default = "stihlclonetest.com"
+  default = "externaldns"
 }
 
 variable "externaldns_domain" {
