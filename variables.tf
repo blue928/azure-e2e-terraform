@@ -12,3 +12,16 @@ variable "location" {
   type    = string
   default = "eastus"
 }
+
+
+# Variables for module arguments
+# module-externaldns-config.tf 
+variable "cluster_namespace" {
+  type    = string
+  default = "stihlclonetest.com"
+}
+
+variable "externaldns_domain" {
+  type    = string
+  default = "bluepresley.com"
+}
