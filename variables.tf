@@ -3,7 +3,7 @@
 # locals {} block below. 
 variable "project_name" {
   type    = string
-  default = "stihlclonetest"
+  default = "testwithexternaldns"
 }
 
 # Default location of all resources created by Terraform. Choose
@@ -11,4 +11,17 @@ variable "project_name" {
 variable "location" {
   type    = string
   default = "eastus"
+}
+
+
+# Variables for module arguments
+# module-externaldns-config.tf 
+variable "externaldns_namespace" {
+  type    = string
+  default = "externaldns"
+}
+
+variable "externaldns_domain" {
+  type    = string
+  default = "bluepresley.com"
 }

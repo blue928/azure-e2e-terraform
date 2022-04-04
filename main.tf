@@ -11,12 +11,12 @@ terraform {
     }
   }
 
-  backend "azurerm" {
-    resource_group_name  = "terraform-storage-rg"
-    storage_account_name = "terraformstateimagine"
-    container_name       = "terraformstatefiles"
-    key                  = "stihlclonetest.tfstate"
-  }
+  #backend "azurerm" {
+  #  resource_group_name  = "terraform-storage-rg"
+  #  storage_account_name = "terraformstateimagine"
+  #  container_name       = "terraformstatefiles"
+  #  key                  = "stihlclonetest.tfstate"
+  #}
 }
 
 # https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs
