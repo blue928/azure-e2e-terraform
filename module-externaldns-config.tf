@@ -1,4 +1,7 @@
 module "external_dns" {
+  depends_on = [
+    module.azure-rg,
+  ]  
   source                = "github.com/blue928/terraform-azurerm-externaldns-module.git"
   resource_group_name   = module.azure-rg.resource_group_name
   # TODO Create a Service Principal module that can feed this data in automatically. 
