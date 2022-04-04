@@ -6,7 +6,7 @@ module "external_dns" {
   #azure_client_id       = var.azure_client_id
   #azure_tenant_id       = var.azure_tenant_id
   #azure_subscription_id = var.azure_subscription_id
-  namespace             = var.internal_system_namespace
+  namespace             = var.cluster_namespace
   domain_name           = var.dns_zone_name
 
   tags = var.tags
