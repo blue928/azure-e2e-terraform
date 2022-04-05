@@ -20,3 +20,37 @@ resource "helm_release" "cert-manager" {
   ]
 
 }
+
+# After Cert Manager is installed, then install the ClusterIssuer. 
+# https://cert-manager.io/docs/configuration/acme/
+
+# TODO - add this to its own file?
+resource "kubernetes_manifest" "clusterissuer_letsencrypt_prod" {
+  manifest = {
+    "apiVersion" = "cert-manager.io/v1"
+    "kind"       = "ClusterIssuer"
+    "metadata" = {
+      "name" = "letsencrypt-prod"
+    }
+    "spec" = {
+      "acme" = {
+        # TODO change this email address to a variable
+        "email" = "bpresley@theimaginegroup.com"
+        "privateKeySecretRef" = {
+          "name" = "letsencrypt-prod"
+        }
+        # TODO change this to a variable, enum between production and staging certificates
+        "server" = "https://acme-v02.api.letsencrypt.org/directory"
+        "solvers" = [
+          {
+            "http01" = {
+              "ingress" = {
+                "class" = "nginx"
+              }
+            }
+          },
+        ]
+      }
+    }
+  }
+}
