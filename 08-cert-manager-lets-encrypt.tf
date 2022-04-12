@@ -54,7 +54,8 @@ resource "kubernetes_manifest" "clusterissuer_letsencrypt_prod" {
     }
   }
   depends_on = [
-    helm_release.cert-manager,
     module.aks-cluster,
+    module.aks-cluster-required-config,
+    helm_release.cert-manager,
   ]
 }
