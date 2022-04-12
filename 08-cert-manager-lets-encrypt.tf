@@ -53,4 +53,7 @@ resource "kubernetes_manifest" "clusterissuer_letsencrypt_prod" {
       }
     }
   }
+  depends_on = [
+    helm_release.cert-manager,
+  ]
 }
