@@ -1,0 +1,17 @@
+name = Stihl Support
+description = Contains the Support contact form and Rules
+core = 7.x
+package = Stihl
+dependencies[] = entity
+dependencies[] = features
+dependencies[] = menu
+dependencies[] = rules
+dependencies[] = webform
+dependencies[] = webform_rules
+__drupal_alter_by_ref[][node][webform] = webform
+features[features_api][] = api:2
+features[menu_custom][] = user-menu
+features[menu_links][] = user-menu_support:node/7
+features[node][] = webform
+features[rules_config][] = rules_send_email_to_users_associated_with_current_bd_user_on_sup
+features[webform][] = support

@@ -1,0 +1,16 @@
+name = Cart Multiple
+description = Implements multiple shopping carts.
+package = Commerce (contrib)
+dependencies[] = commerce_cart
+
+; Views handlers
+files[] = includes/views/handlers/commerce_cart_multiple_handler_field_cart_multiple_operations.inc
+files[] = includes/views/handlers/commerce_cart_multiple_handler_field_order.inc
+core = 7.x
+
+; Information added by Drupal.org packaging script on 2017-04-05
+version = "7.x-1.1"
+core = "7.x"
+project = "commerce_cart_multiple"
+datestamp = "1491425307"
+

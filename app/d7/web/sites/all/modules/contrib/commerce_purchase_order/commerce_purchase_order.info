@@ -1,0 +1,17 @@
+name = Purchase Order
+description = Grant customers permission to pay by purchase order.
+package = Commerce (contrib)
+dependencies[] = commerce
+dependencies[] = commerce_payment
+core = 7.x
+
+; Base module files
+files[] = commerce_purchase_order.module
+files[] = includes/views/commerce_purchase_order_handler_field_po_number.inc
+
+; Information added by Drupal.org packaging script on 2017-05-17
+version = "7.x-1.x-dev"
+core = "7.x"
+project = "commerce_purchase_order"
+datestamp = "1495031293"
+

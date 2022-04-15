@@ -1,0 +1,163 @@
+<?php
+
+/**
+ * @file
+ * Visibility for menu items based on context.
+ */
+
+/**
+ * Implements hook_module_implements_alter().
+ *
+ * Make sure that this form_alter is called AFTER the same hook provided in
+ * menu_item_visibility.
+ */
+function context_menu_item_visibility_module_implements_alter(&$implementations, $hook) {
+
+  if ($hook == 'form_alter') {
+    if (isset($implementations['context_menu_item_visibility'])) {
+      $group = $implementations['context_menu_item_visibility'];
+      unset($implementations['context_menu_item_visibility']);
+      $implementations['context_menu_item_visibility'] = $group;
+    }
+  }
+}
+
+/**
+ * Implements hook_translated_menu_link_alter().
+ */
+function context_menu_item_visibility_translated_menu_link_alter(&$item, $map) {
+
+  if (!empty($item['access'])) {
+    // Menu administrators can see all links.
+    if (strpos(current_path(), 'admin/structure/menu/manage/' . $item['menu_name']) === 0 && user_access('administer menu')) {
+      return;
+    }
+
+    // Load the contexts associated with this menu link.
+    $item['visibility'] = context_menu_item_visibility_load($item['mlid']);
+
+    // Check to see if the active contexts are associated with this menu link.
+    if (!empty($item['visibility']['context']) &&
+      is_array($item['visibility']['context']) &&
+      empty(array_intersect($item['visibility']['context'], array_keys(context_active_contexts())))) {
+
+      $item['access'] = FALSE;
+    }
+
+  }
+}
+
+/**
+ * Implements hook_menu_link_insert().
+ */
+function context_menu_item_visibility_menu_link_insert($link) {
+
+  if (!empty($link['context']) && is_array($link['context']) && $contexts = array_filter($link['context'])) {
+
+    $query = db_insert('menu_links_visibility_context');
+    $query->fields(array('mlid', 'context'));
+    foreach ($contexts as $context => $val) {
+      $query->values(array('mlid' => $link['mlid'], 'context' => $context));
+    }
+    $query->execute();
+  }
+}
+
+/**
+ * Implements hook_menu_link_delete().
+ */
+function context_menu_item_visibility_menu_link_delete($link) {
+  if (is_array($link) && isset($link['mlid'])) {
+    db_delete('menu_links_visibility_context')
+      ->condition('mlid', $link['mlid'])
+      ->execute();
+  }
+}
+
+/**
+ * Implements hook_menu_link_alter().
+ */
+function context_menu_item_visibility_menu_link_alter(&$item) {
+
+  if (isset($item['context'])) {
+    context_menu_item_visibility_menu_link_delete($item);
+  }
+
+  context_menu_item_visibility_menu_link_insert($item);
+}
+
+/**
+ * Load all visibility data for a menu link.
+ */
+function context_menu_item_visibility_load($mlid, $reset = FALSE) {
+  // Use the advanced drupal_static() pattern, since this is called very often.
+  static $drupal_static_fast;
+
+  if (!isset($drupal_static_fast)) {
+    $drupal_static_fast['context_visibilities'] = &drupal_static(__FUNCTION__);
+  }
+
+  $visibilities = &$drupal_static_fast['context_visibilities'];
+
+  // If we haven't stored them all in the static build them from the database.
+  $context_visibilities = array();
+
+  if (!isset($visibilities) || $reset) {
+    // Select all menu link ids and their role ids.
+    $result = db_select('menu_links_visibility_context', 'r')
+      ->fields('r')
+      ->execute()
+      ->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($result as $record) {
+      $context_visibilities[$record['mlid']][] = $record['context'];
+    }
+  }
+
+  if (is_array($context_visibilities) && (is_numeric($mlid)) && isset($context_visibilities[$mlid]) && !empty($context_visibilities[$mlid])) {
+    $context_visibility['context'] = $context_visibilities[$mlid];
+  }
+  else {
+    $context_visibility['context'] = array();
+  }
+
+  if (!empty($mlid)) {
+    drupal_alter('context_menu_item_visibility_load', $context_visibility, $mlid);
+  }
+  return $context_visibility;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function context_menu_item_visibility_form_menu_edit_item_alter(&$form, &$form_state) {
+
+  // Add the context tab to the existing menu_item_visibility tabs.
+  $form['visibility']['contexts'] = array(
+    '#type' => 'fieldset',
+    '#title' => 'Context',
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#group' => 'visibility',
+    '#weight' => 11,
+  );
+
+  $contexts = context_load();
+  $options = array();
+  foreach ($contexts as $cid => $context) {
+    $options[$cid] = t('@contextname (@contextdescription)', array(
+      '@contextname' => $context->name,
+      '@contextdescription' => $context->description
+    ));
+  }
+
+  $visibility = context_menu_item_visibility_load($form['mlid']['#value'], TRUE);
+
+  $form['visibility']['contexts']['context'] = array(
+    '#type' => 'checkboxes',
+    '#title' => 'Contexts',
+    '#options' => $options,
+    '#default_value' => isset($visibility['context']) ? $visibility['context'] : array(),
+  );
+
+}

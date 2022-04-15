@@ -1,0 +1,11 @@
+name = Stihl Distributor Profiles
+description = Stihl distributor profiles as custom entities.
+package = Stihl
+core = 7.x
+
+dependencies[] = stihl_core
+dependencies[] = entity
+
+files[] = 'includes/StihlProfilesEntity.inc'
+files[] = 'includes/StihlProfilesController.inc'
+files[] = 'includes/StihlProfilesUIController.inc'

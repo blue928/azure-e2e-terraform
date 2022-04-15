@@ -39,5 +39,7 @@ testcommands.azcli
 agent/
 helmcharts/
 utility/
-app/
+#app/
 *.sql
+db.sql
+db.sql.zip

@@ -1,0 +1,10 @@
+name = Pro-Mail
+description = Module for interfacing with the Pro-Mail order management system.
+package = Classic
+core = 7.x
+
+configure = admin/config/services/promail
+
+files[] = includes/PromailDatabase.inc
+files[] = includes/PromailDatabaseConnection.inc
+files[] = includes/PromailUtility.inc

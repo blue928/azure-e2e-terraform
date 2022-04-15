@@ -1,0 +1,28 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the Fusion Pro module.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function fusion_pro_uninstall() {
+  variable_del('fusion_pro_templating_host');
+  variable_del('fusion_pro_templating_port');
+  variable_del('fusion_pro_templating_uri');
+  variable_del('fusion_pro_templating_user');
+  variable_del('fusion_pro_templating_pass');
+  variable_del('fusion_pro_templating_client');
+  variable_del('fusion_pro_pdf_storage_method');
+  variable_del('fusion_pro_pdf_storage_host');
+  variable_del('fusion_pro_pdf_storage_folder');
+  variable_del('fusion_pro_pdf_storage_user');
+  variable_del('fusion_pro_pdf_storage_pass');
+  variable_del('fusion_pro_pdf_storage_path');
+  variable_del('fusion_pro_debug_mode');
+  variable_del('fusion_pro_devel_mode');
+  variable_del('fusion_pro_templating_host_last_index');
+  variable_del('fusion_pro_templating_host_last_requested_host');
+}

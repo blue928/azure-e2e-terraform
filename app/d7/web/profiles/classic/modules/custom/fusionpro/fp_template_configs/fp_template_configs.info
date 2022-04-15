@@ -1,0 +1,11 @@
+name = FusionPro Template Configurations
+description = Provides UI for configuring template specific settings.
+package = Classic
+core = 7.x
+
+dependancies[] = fusion_pro
+dependencies[] = entity
+
+files[] = 'includes/FPTemplateConfigsEntity.inc'
+files[] = 'includes/FPTemplateConfigsController.inc'
+files[] = 'includes/FPTemplateConfigsUIController.inc'

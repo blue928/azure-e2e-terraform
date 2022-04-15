@@ -1,0 +1,314 @@
+<?php
+
+/**
+ * @file
+ * Provides an example payment method for Drupal Commerce for testing and
+ *   development.
+ */
+
+
+/**
+ * Implements hook_menu().
+ */
+function commerce_purchase_order_menu() {
+  $items = array();
+
+  // Add a menu item for capturing authorizations.
+  $items['admin/commerce/orders/%commerce_order/payment/%commerce_payment_transaction/po-validate'] = array(
+    'title' => 'Validate',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('commerce_purchase_order_validate_form', 3, 5),
+    'access callback' => 'commerce_purchase_order_validate_access',
+    'access arguments' => array(3, 5),
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'context' => MENU_CONTEXT_INLINE,
+    'weight' => 2,
+  );
+
+  return $items;
+}
+
+/**
+ * User access callback for purchase order number validation
+ */
+function commerce_purchase_order_validate_access($order, $transaction) {
+  if ($transaction->payment_method == 'commerce_purchase_order' && $transaction->status == COMMERCE_PAYMENT_STATUS_PENDING) {
+    // Allow access if the user can update payments on this order.
+    return commerce_payment_transaction_access('update', $transaction);
+  }
+  // Return FALSE if the transaction isn't with a Purchase Order
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * Validate a payment transaction paid with a purchase order
+ */
+function commerce_purchase_order_validate_form($form, &$form_state, $order, $transaction) {
+  $form_state['order'] = $order;
+  $form_state['transaction'] = $transaction;
+
+  // Load and store the payment method instance for this transaction.
+  $payment_method = commerce_payment_method_instance_load($transaction->instance_id);
+  $form_state['payment_method'] = $payment_method;
+
+  $form['information'] = array(
+    '#markup' => t('Validating the transaction means that the PO number was verified. This will mark the transaction as successful').'<br />'
+  );
+
+  $form['actions'] = array('#type' => 'actions');
+
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Validate')
+  );
+
+  // Cancel link in case they'd like to validate another time.
+  $form['actions']['cancel'] = array(
+    '#markup' => l(t('Cancel'), 'admin/commerce/orders/' . $order->order_id . '/payment', array('absolute' => TRUE)),
+  );
+
+
+  return $form;
+}
+
+function commerce_purchase_order_validate_form_submit($form, &$form_state) {
+  $transaction = $form_state['transaction'];
+  $order = $form_state['order'];
+  $transaction->status = COMMERCE_PAYMENT_STATUS_SUCCESS;
+  commerce_payment_transaction_save($transaction);
+  $form_state['redirect'] = 'admin/commerce/orders/'.$order->order_id.'/payment';
+}
+
+/**
+ * Implements hook_commerce_payment_method_info().
+ */
+function commerce_purchase_order_commerce_payment_method_info() {
+  $payment_methods = array();
+
+  $payment_methods['commerce_purchase_order'] = array(
+    'title' => t('Purchase Order'),
+    'description' => t('Grant customers permission to pay by purchase order.'),
+    'active' => TRUE,
+  );
+
+  return $payment_methods;
+}
+
+/**
+ * Payment method callback: settings form.
+ */
+function commerce_purchase_order_settings_form($settings = NULL) {
+  $form = array();
+  $form['commerce_purchase_order_length'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Minimum purchase order number length'),
+    '#size' => 4,
+    '#description' => t('The minimum required length of the purchase order number. Set to 0 if there is no length requirement.'),
+    '#default_value' => isset($settings['commerce_purchase_order_length']) ? $settings['commerce_purchase_order_length'] : 6,
+    '#required' => TRUE,
+  );
+  $form['commerce_purchase_order_instructions'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Instructions'),
+    '#description' => t('The instructions the customer sees when checking out.'),
+    '#default_value' => isset($settings['commerce_purchase_order_instructions']) ? $settings['commerce_purchase_order_instructions'] : '',
+  );
+  return $form;
+}
+
+/**
+ * Payment method callback: submit form.
+ */
+function commerce_purchase_order_submit_form($payment_method, $pane_values, $checkout_pane, $order) {
+  $form = array();
+  $settings = $payment_method['settings'];
+
+  // Merge in values from the order.
+  if (!empty($order->data['commerce_purchase_order'])) {
+    $pane_values += $order->data['commerce_purchase_order'];
+  }
+
+  // Merge in default values.
+  $pane_values += array(
+    'po_number' => '',
+  );
+
+  $form['po_number'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Purchase Order'),
+    '#description' => isset($settings['commerce_purchase_order_instructions']) ? $settings['commerce_purchase_order_instructions'] : '',
+    '#default_value' => $pane_values['po_number'],
+    '#required' => TRUE,
+  );
+
+  return $form;
+}
+
+/**
+ * Payment method callback: submit form validation.
+ */
+function commerce_purchase_order_submit_form_validate($payment_method, $pane_form, $pane_values, $order, $form_parents = array()) {
+
+  // If user did not set default value, set it to 0.
+  $po_length = (empty($payment_method['settings'])) ? 0 : $payment_method['settings']['commerce_purchase_order_length'];
+
+  // Automatically return true if $po_length is set to 0.
+  if ($po_length == 0) {
+    return TRUE;
+  }
+
+  // Throw an error if a long enough number was not provided.
+  if (strlen($pane_values['po_number']) < $po_length) {
+    form_set_error(implode('][', array_merge($form_parents, array('name'))), t('You must enter a purchase order number at least !po_length characters long.', array('!po_length' => $po_length)));
+    // Even though the form error is enough to stop the submission of the form,
+    // it's not enough to stop it from a Commerce standpoint because of the
+    // combined validation / submission going on per-pane in the checkout form.
+    return FALSE;
+  }
+}
+
+/**
+ * Payment method callback: submit form submission.
+ */
+function commerce_purchase_order_submit_form_submit($payment_method, $pane_form, $pane_values, $order, $charge) {
+  $order->data['commerce_purchase_order'] = $pane_values;
+
+  commerce_purchase_order_transaction($payment_method, $order, $charge, $pane_values['po_number']);
+}
+
+/**
+ * Creates a PO number payment transaction for the specified charge amount.
+ *
+ * @param $payment_method
+ *   The payment method instance object used to charge this payment.
+ * @param $order
+ *   The order object the payment applies to.
+ * @param $charge
+ *   An array indicating the amount and currency code to charge.
+ * @param $name
+ *   The name entered on the submission form.
+ */
+function commerce_purchase_order_transaction($payment_method, $order, $charge, $po_number) {
+  $transaction = commerce_payment_transaction_new('commerce_purchase_order', $order->order_id);
+  $transaction->instance_id = $payment_method['instance_id'];
+  $transaction->amount = $charge['amount'];
+  $transaction->currency_code = $charge['currency_code'];
+  // Set to pending: the administrator will need to set it manually to success when the PO number was verified.
+  $transaction->status = COMMERCE_PAYMENT_STATUS_PENDING;
+  $transaction->message = 'Paid with PO Number: @po_number';
+  $transaction->message_variables = array('@po_number' => $po_number);
+
+  commerce_payment_transaction_save($transaction);
+  
+  // Insert PO number in DB
+  $order_id = $order->order_id;
+  db_insert('commerce_purchase_order')
+    ->fields(array(
+      'transaction_id' => $transaction->transaction_id,
+      'order_id' => $order_id,
+      'po_number' => $po_number
+    ))
+    ->execute();
+}
+
+/**
+ * Implements hook_commerce_payment_transaction_delete().
+ */
+function commerce_purchase_order_commerce_payment_transaction_delete($transaction) {
+  // Delete purchase order when transaction was deleted.
+  db_delete('commerce_purchase_order')
+    ->condition('transaction_id', $transaction->transaction_id)
+    ->execute();
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function commerce_purchase_order_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'commerce_purchase_order') . '/includes/views',
+  );
+}
+
+/**
+ * Returns a PO number from an order id
+ */
+function commerce_purchase_order_number_from_order_id($order_id) {
+  $result = db_select('commerce_purchase_order', 'c')
+    ->fields('c')
+    ->condition('order_id', $order_id, '=')
+    ->execute()
+    ->fetchAssoc();
+  if ($result) {
+    return $result['po_number'];
+  }
+  else {
+    return '';
+  }
+}
+
+/**
+ * Returns the list of all PO payment method instances.
+ */
+function commerce_purchase_order_payment_method_instances() {
+  $instance_ids = array();
+
+  // load all rules.
+  $rules_configs = rules_config_load_multiple(FALSE);
+
+  // find all rules with an action to enable PO payment method.
+  foreach ($rules_configs as $rule_name => $rule) {
+    // Only rules and sub-types have actions.
+    if (!($rule instanceof Rule)) {
+      continue;
+    }
+    foreach ($rule->actions() as $action) {
+      // skip any actions that are not simple rules actions, ie loops
+      if (!($action instanceof RulesAction)) {
+        continue;
+      }
+      if ($action->getElementName() == 'commerce_payment_enable_commerce_purchase_order') {
+        $instance_ids[] = commerce_payment_method_instance_id('commerce_purchase_order', $rule);
+        continue 2; // skip to next rule
+      }
+    }
+  }
+
+  return $instance_ids;
+}
+
+/**
+ * Implements hook_action_info().
+ */
+function commerce_purchase_order_action_info() {
+  return array(
+    'commerce_purchase_order_validate_action' => array(
+      'type' => 'commerce_payment_transaction',
+      'label' => t('Validate purchase orders'),
+      'configurable' => FALSE,
+      'behavior' => array('changes_property'),
+    ),
+  );
+}
+
+/**
+ * Change the purchase order transaction status to success.
+ *
+ * @param object $transaction
+ */
+function commerce_purchase_order_validate_action($transaction) {
+  if ($transaction->payment_method != 'commerce_purchase_order') {
+    drupal_set_message(t('Transaction %t is not purchase order and could not be validated.', array('%t' => $transaction->transaction_id)), 'warning');
+    return;
+  }
+  if ($transaction->status == COMMERCE_PAYMENT_STATUS_SUCCESS) {
+    drupal_set_message(t('Transaction %t skipped.', array('%t' => $transaction->transaction_id)), 'warning');
+    return;
+  }
+
+  $transaction->status = COMMERCE_PAYMENT_STATUS_SUCCESS;
+  commerce_payment_transaction_save($transaction);
+}

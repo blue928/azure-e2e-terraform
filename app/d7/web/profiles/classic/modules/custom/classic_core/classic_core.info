@@ -1,0 +1,6 @@
+name = Classic Core
+description = Custom configuration related to the Classic distribution.
+core = 7.x
+package = Classic
+files[] = classic.module
+files[] = classic.install

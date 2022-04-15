@@ -1,0 +1,165 @@
+// Insert your styling here.
+
+/* Index
+[1] Classes
+[2] Sidemenu
+[3] Main-Container
+[4] News
+*/
+
+/* =========================
+	CLASSES
+========================== */
+.pipe {
+	color: @gray-lighter;
+}
+
+/* =========================
+	SIDEMENU
+========================== */
+#sidemenu {
+	background: @gray-lighter;
+	.box-shadow (0 0 6px rgba(0,0,0,0.5));
+	cursor: pointer;
+	height: 100%;
+	position: fixed;
+	bottom: auto;
+	left: 0;
+	width: 60px;
+	z-index: 99;
+
+	.block {
+		display: none;
+	}
+
+	.logo {
+		text-align: center;
+		margin: 0 0 10px;
+		height: 64px;
+		text-decoration: none;
+		width: 100%;
+
+		&:before {
+    		content: "";
+    		display: inline-block;
+    		height: 100%;
+    		vertical-align: middle;
+		}
+
+		img {
+			margin: 0 auto;
+			max-width: 85%;
+			width: 100px;
+			max-height: 50px;
+			vertical-align: middle;
+		}
+	}
+
+	.side_menu {
+		padding: .65em 1em;
+		overflow-y: auto;
+		position: absolute;
+		bottom: 83px;
+		top: 64px;
+	}
+
+	.footer {
+		position: absolute;
+		bottom: 40px;
+		right: 0;
+		margin-top: 0;
+		padding: 0;
+		width: 100%;
+
+		/* poorly named sidebar menu button */
+		.navbar-toggle{
+			padding: 0;
+		  .navbar-glyphicon;
+		  opacity: .5;
+
+		  &:hover {
+		  	opacity: 1;
+		  }
+		}
+	}
+
+	&.open {
+		width: 200px;
+
+		.block {
+			background: @f9;
+			.border-radius(4px);
+			.box-shadow (inset 0 0 2px rgba(0,0,0,0.2));
+			display: block;
+			clear: both;
+			padding: .5em;
+			text-align: left;
+			margin: .5em 0;
+
+			h2 {
+				font-size: 24px;
+				margin: 5px;
+			}
+
+			.nav > li > a {
+				padding: 5px;
+			}
+
+			.btn-default {
+				width: 100%;
+				margin: .25em auto;
+			}
+		}
+
+		.container-inline div {
+			display: table;
+		}
+
+		~ .main-container,
+		~ #footer-wrapper {
+			padding-left: 220px;
+
+			.navbar-vertical.navbar-tray-open & {
+				padding-left: 20px;
+			}
+		}
+
+		.footer {
+			.navbar-toggle {
+				transform: rotate(-180deg);
+				text-shadow: -1px -1px 2px @gray-light;
+			}
+		}
+	}
+}
+
+/* =========================
+	MAIN-CONTAINER
+========================== */
+.logged-in .main-container {
+	padding-left: 80px;
+	width: 100%;
+}
+
+/* =========================
+	NEWS
+========================== */
+.news-item {
+	margin: 0 0 .5em;
+	border-bottom: 1px dashed @gray-lighter;
+	padding: 0 0 .5em;
+
+	.glyphicon-tint {
+		opacity: .5;
+		transition: opacity .2s ease;
+	}
+
+	&:hover .glyphicon-tint {
+			opacity: 1;
+		}
+
+	.title {
+		font-size: @font-size-large;
+		margin-left: .25em;
+	}
+}

@@ -1,0 +1,206 @@
+<?php
+
+/**
+ * @file
+ * Contains implementations of hook_update_N().
+ */
+
+/**
+ * STIHL-234: Removes NULLs from field_data_special_pricing_language.
+ */
+function stihl_orders_update_7001() {
+  $delete = db_delete('field_data_field_special_pricing_language')
+    ->condition('entity_type', 'commerce_line_item')
+    ->isNull('field_special_pricing_language_value')
+    ->execute();
+  print "$delete records were removed from `field_data_special_pricing_language.`\r\n";
+}
+
+/**
+ * STIHL-428: Configures UPC Book FusionPro template.
+ */
+function stihl_orders_update_7002() {
+  if (module_enable(array('fusion_pro', 'fp_template_configs'))) {
+    // Create the template configuration needed to produce the UPC Books.
+    $ent = entity_create('fp_template_configs', [
+      'name' => STIHL_ORDERS_UPC_TEMPLATE_CONFIG,
+      'description' => 'Template used for generating pricing/no-pricing UPC Book downloads.',
+      'template' => 'upc',
+      'file_type' => 'pdf',
+      'data_format' => 'csv',
+      'cache' => 1,
+    ]);
+    $ent->save();
+  }
+}
+
+/**
+ * STIHL-444: Adds 'Ready for Review' state to `order_status` workflow.
+ */
+function stihl_orders_update_7003() {
+  // Get the order_status workflow and its states.
+  $workflow = workflow_load_by_name('order_status');
+  $states = workflow_get_workflow_state_names($workflow->wid);
+
+  // Add the 'ready for review' state if it doesn't already exist.
+  if (!in_array('ready for review', $states)) {
+    $review_state = $workflow->createState('ready for review', FALSE);
+    $review_state->name = 'ready_for_review';
+    $review_state->save();
+    $states[$review_state->sid] = $review_state->state;
+  }
+  $states = array_flip($states);
+
+  // Role IDs.
+  $admin_role = 3;
+  $rladmin_role = 5;
+  $bduser_role = 4;
+  $author_role = -1;
+
+  // Create the transitions and roles for the new state.
+  $submitted_review = $workflow->createTransition($states['submitted'], $states['ready for review']);
+  $submitted_review->roles = array(
+    $admin_role,
+    $rladmin_role,
+    $bduser_role,
+    $author_role,
+  );
+  $submitted_review->save();
+
+  foreach (array('incomplete', 'approved', 'deleted') as $state) {
+    $transition = $workflow->createTransition($states['ready for review'], $states[$state]);
+    $transition->roles = array($admin_role, $rladmin_role);
+    $transition->save();
+  }
+}
+
+/**
+ * STIHL-445: Create proofs for orders currently in "Submitted" state.
+ */
+function stihl_orders_update_7004() {
+  $submitted_orders_query = 'SELECT o.order_id
+    FROM {commerce_order} o
+    INNER JOIN {field_data_field_order_status} s
+    ON s.entity_id = o.order_id
+    WHERE s.field_order_status_value = :sid';
+
+  $submitted_orders = db_query($submitted_orders_query, array(':sid' => 30));
+  foreach ($submitted_orders->fetchCol() as $order_id) {
+    stihl_orders_create_online_proof($order_id);
+    print "Order #{$order_id}: Submitted for proof." . PHP_EOL;
+  }
+}
+
+/**
+ * STIHL-469: Remove fields associated with removed orders.
+ */
+function stihl_orders_update_7005() {
+  // Fields associated with the 'commerce_order' entity.
+  $commerce_order_fields = field_info_instances('commerce_order', 'commerce_order');
+
+  // An array of all the existing order IDs.
+  $orders = db_query('SELECT order_id FROM {commerce_order}')->fetchCol();
+
+  foreach (array_keys($commerce_order_fields) as $field) {
+    $table = "field_data_$field";
+
+    // Find rows in $table that are associated with orders that don't exist.
+    $order_ids = db_select($table, 'f')
+      ->fields('f', ['entity_id'])
+      ->condition('entity_id', $orders, 'NOT IN')
+      ->distinct()
+      ->execute()
+      ->fetchCol();
+
+    if ($order_ids) {
+      // Find any line items associated with the non-existent orders.
+      $line_items = db_query('SELECT line_item_id FROM {commerce_line_item} WHERE order_id IN (:order_ids)',
+        [':order_ids' => $order_ids])->fetchCol();
+
+      // Delete the line items.
+      if ($line_items) {
+        commerce_line_item_delete_multiple($line_items);
+        print strtr('Removed the following line items: :line_items',
+          [':line_items' => implode(', ', $line_items)]) . PHP_EOL;
+      }
+
+      // Delete the rows in $table associated with the non-existent orders.
+      db_delete($table)->condition('entity_id', $order_ids, 'IN')->execute();
+
+      print strtr('Removed the following orders from {:table}: :order_ids',
+        [':table' => $table, ':order_ids' => implode(', ', $order_ids)]) . PHP_EOL;
+    }
+  }
+}
+
+/**
+ * STIHL-472: Creates Pricing Year Entities for 2017 & 2018.
+ */
+function stihl_orders_update_7006() {
+  // Enable the `stihl_pricing_years` module.
+  if (module_enable(array('stihl_pricing_years'))) {
+    // Configures each of fields associated with the 2017/2018 pricing years.
+    $pricing_year_configs = array(
+      '2017' => array(
+        'bulk_one_sided' => (float) 0.23,
+        'kitted_one_sided' => (float) 0.25,
+        'bulk_two_sided' => (float) 0.23,
+        'kitted_two_sided' => (float) 0.27,
+        'upc_book' => (float) 0,
+        'enabled' => 0,
+      ),
+      '2018' => array(
+        'bulk_one_sided' => (float) 0.245,
+        'kitted_one_sided' => (float) 0.275,
+        'bulk_two_sided' => (float) 0.255,
+        'kitted_two_sided' => (float) 0.285,
+        'upc_book' => (float) 0,
+        'enabled' => 1,
+      ),
+    );
+
+    foreach ($pricing_year_configs as $pricing_year => $config) {
+      // Create the Stihl Pricing Year entity for $pricing_year.
+      $ent = entity_create('stihl_pricing_years', [
+        'pricing_year' => $pricing_year,
+        'bulk_one_sided' => $config['bulk_one_sided'],
+        'kitted_one_sided' => $config['kitted_one_sided'],
+        'bulk_two_sided' => $config['bulk_two_sided'],
+        'kitted_two_sided' => $config['kitted_two_sided'],
+        'upc_book' => $config['upc_book'],
+        'enabled' => $config['enabled'],
+      ]);
+      $ent->save();
+
+      // The value of the new field will be the id of the entity.
+      $pricing_year_reference = $ent->id;
+
+      // Find all of the orders for $pricing_year.
+      $query = new EntityFieldQuery();
+      $query->entityCondition('entity_type', 'commerce_order')
+        ->fieldCondition('field_order_pricing_year', 'value', $pricing_year)
+        ->addMetaData('account', user_load(1));
+      $result = $query->execute();
+
+      if (isset($result['commerce_order'])) {
+        $order_ids = array_keys($result['commerce_order']);
+        print "Updating `field_pricing_year_reference` for {$pricing_year} orders: ";
+        // Set the value of the `field_pricing_year_reference` for each order to
+        // the ID of the pricing_year entity that corresponds to $pricing_year.
+        array_walk($order_ids, function ($order_id) use ($pricing_year_reference) {
+          print "{$order_id} ";
+          $order = entity_metadata_wrapper('commerce_order', $order_id);
+          $order->field_pricing_year_reference = $pricing_year_reference;
+          $order->field_order_pricing_year = NULL;
+          $order->save();
+        });
+        print PHP_EOL . strtr('@count orders updated.', ['@count' => count($order_ids)]) . PHP_EOL;
+      }
+    }
+    // Delete `field_order_pricing_year` from the db.
+    if ($instance = field_info_instance('commerce_order', 'field_order_pricing_year', 'commerce_order')) {
+      field_delete_instance($instance, TRUE);
+      field_purge_batch(1);
+    }
+  }
+}

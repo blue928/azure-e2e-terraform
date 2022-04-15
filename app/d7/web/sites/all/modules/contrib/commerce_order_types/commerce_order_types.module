@@ -1,0 +1,233 @@
+<?php
+
+/**
+ * @file
+ * Provides a UI for creating and managing custom
+ * order types.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function commerce_order_types_menu() {
+  $items = array();
+  if (module_exists('commerce_order_ui')) {
+    foreach (commerce_order_types_order_types() as $type => $info) {
+      $items['admin/commerce/orders/add/' . $type] = array(
+        'title' => 'Add order @type',
+        'title arguments' => array('@type' => $info->name),
+        'description' => $info->help,
+        'page callback' => 'commerce_order_ui_order_form_wrapper',
+        'page arguments' => array(commerce_order_new(0, NULL, $type)), //type
+        'access callback' => 'commerce_order_access',
+        'access arguments' => array('create'),
+        'type' => MENU_NORMAL_ITEM,
+        'file' => 'includes/commerce_order_ui.orders.inc',
+        'file path' => drupal_get_path('module', 'commerce_order_ui'),
+      );
+    }
+  }
+  return $items;
+}
+
+/**
+ * Implements hook_menu_local_tasks_alter().
+ */
+function commerce_order_types_menu_local_tasks_alter(&$data, $router_item, $root_path) {
+  // Add action link 'admin/commerce/orders/add' on 'admin/commerce/orders'.
+  if ($root_path == 'admin/commerce/orders') {
+    foreach (commerce_order_types_order_types() as $type => $order_type) {
+      $type_arg = strtr($type, '_', '-');
+      $item = menu_get_item('admin/commerce/orders/add/' . $type_arg);
+      if ($item['access']) {
+        $item['title'] = 'Create ' . $order_type->name . ' order';
+        $data['actions']['output'][] = array(
+          '#theme' => 'menu_local_action',
+          '#link' => $item,
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_info().
+ */
+function commerce_order_types_entity_info() {
+  $info['commerce_order_type'] = array(
+    'label' => t('Order type'),
+    'plural label' => t('Order types'),
+    'description' => t('Types of commerce order.'),
+    'entity class' => 'CommerceOrderType',
+    'controller class' => 'EntityAPIControllerExportable',
+    'base table' => 'commerce_order_types',
+    'fieldable' => FALSE,
+    'bundle of' => 'commerce_order',
+    'exportable' => TRUE,
+    'entity keys' => array(
+      'id' => 'id',
+      'name' => 'type',
+      'label' => 'name',
+    ),
+    'access callback' => 'commerce_order_type_access',
+    'module' => 'commerce_order_types',
+    // Enable the entity API's admin UI.
+    'admin ui' => array(
+      'path' => 'admin/commerce/config/order-types',
+      'file' => 'commerce_order_types.admin.inc',
+      'controller class' => 'EntityDefaultUIController',
+    ),
+  );
+
+  return $info;
+}
+
+/**
+ * Implements hook_entity_info_alter().
+ */
+function commerce_order_types_entity_info_alter(&$entity_info) {
+  foreach (commerce_order_types_order_types() as $type => $info) {
+    $entity_info['commerce_order']['bundles'][$type] = array(
+      'label' => $info->name,
+      'admin' => array(
+        'path' => 'admin/commerce/config/order-types/manage/%commerce_order_type',
+        'real path' => 'admin/commerce/config/order-types/manage/' .  $type,
+        'bundle argument' => 5,
+        'access arguments' => array('administer order types'),
+      ),
+    );
+  }
+}
+
+/**
+ * Implements hook_help().
+ */
+function commerce_order_types_help($path, $arg) {
+  // Display the order type's help on the order add page.
+  if (strpos($path, 'admin/commerce/orders/add') === 0 && !empty($arg[5])) {
+    $type = $arg[5];
+    $order_type = commerce_order_types_order_types($type);
+    $help = $order_type->help;
+
+    if (!empty($help)) {
+      return '<p>' . filter_xss_admin($help) . '</p>';
+    }
+  }
+}
+
+/**
+ * Implements hook_admin_menu_map().
+ */
+function commerce_order_types_admin_menu_map() {
+  $map = $arguments = array();
+  $commerce_order_types = array_keys(commerce_order_types_order_types());
+  foreach ($commerce_order_types as $type) {
+    $arguments[] = array(
+      '%commerce_order_type' => array($type),
+      '%entity_object' => array($type),
+    );
+  }
+
+  if ($arguments) {
+    $map['admin/commerce/config/order-types/manage/%commerce_order_type'] = array(
+      // Link generated items directly to the "commerce order types" item.
+      'parent' => 'admin/commerce/config/order-types',
+      // Hide the "List" item, as this expansion will expose all available
+      // options.
+      'hide' => 'admin/commerce/config/order-types/list',
+      // Create expansion arguments for the '%commerce_order_type' placeholder.
+      'arguments' => $arguments,
+    );
+  }
+
+  return $map;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function commerce_order_types_permission() {
+  return array(
+    'administer order types' => array(
+      'title' => t('Administer order types'),
+      'description' => t('Create new order types and configure fields for them.'),
+      'restrict access' => TRUE,
+    ),
+  );
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ *
+ * Make sure our entity info hook runs after commerce_order.
+ */
+function commerce_order_types_module_implements_alter(&$implementations, $hook) {
+  if ($hook == 'entity_info_alter') {
+    $group = $implementations['commerce_order_types'];
+    unset($implementations['commerce_order_types']);
+    $implementations['commerce_order_types'] = $group;
+  }
+}
+
+/**
+ * Access callback for commerce order types.
+ */
+function commerce_order_type_access($op, $commerce_order_type, $account = NULL) {
+  return user_access('administer order types', $account);
+}
+
+
+/**
+ * Load commerce order Type.
+ */
+function commerce_order_type_load($type) {
+  return commerce_order_types_order_types($type);
+}
+
+/**
+ * Returns an array of commerce order types as defined by this module.
+ */
+function commerce_order_types_order_types($type = FALSE) {
+  $types = entity_load_multiple_by_name('commerce_order_type', !empty($type) ? array($type) : FALSE);
+  return !empty($type) ? reset($types) : $types;
+}
+
+/**
+ * Deletes an order type.
+ *
+ * @param string $type
+ *   The machine-readable name of the order type.
+ * @param bool $skip_reset
+ *   Boolean indicating whether or not this delete should result in order
+ *     types being reset and the menu being rebuilt; defaults to FALSE. This is
+ *     useful when you intend to perform many saves at once, as menu rebuilding
+ *     is very costly in terms of performance.
+ */
+function commerce_order_types_order_type_delete($type, $skip_reset = FALSE) {
+  $order_type = commerce_order_types_order_types($type);
+
+  db_delete('commerce_order_types_order_types')
+    ->condition('type', $type)
+    ->execute();
+
+  // Rebuild the menu to get rid of this type's order add menu item.
+  if (!$skip_reset) {
+    menu_rebuild();
+  }
+
+  // Notify the field API that this bundle has been destroyed.
+  field_attach_delete_bundle('commerce_order', $type);
+}
+
+/**
+ * Build an array of order types.
+ */
+function commerce_order_types_options_list() {
+  $types = array();
+
+  foreach (commerce_order_types_order_types() as $type => $order_type) {
+    $types[$type] = $order_type['name'];
+  }
+
+  return $types;
+}

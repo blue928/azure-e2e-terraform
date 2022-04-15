@@ -1,0 +1,3 @@
+name = Profiler
+description = Library library that allows an install profile to be defined as a Drupal .info file.
+core = 7.x

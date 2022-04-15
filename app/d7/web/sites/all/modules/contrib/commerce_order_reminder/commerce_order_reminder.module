@@ -1,0 +1,111 @@
+<?php
+
+/**
+ * @file
+ * Reminds users of their incomplete orders via email.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function commerce_order_reminder_menu() {
+  $items = array();
+  $items['admin/commerce/config/commerce-order-reminder'] = array(
+    'title' => 'Pop order expiration reminders',
+    'description' => 'Configuration for notifying user of expiring POP items in their cart',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('commerce_order_reminder_settings_form'),
+    'access arguments' => array('administer commerce order reminders'),
+    'file' => 'commerce_order_reminder.admin.inc',
+    'weight' => 1,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_cron().
+ *
+ * Sends email reminders for orders that fit filtering criteria.
+ */
+function commerce_order_reminder_cron() {
+  $reminder_settings = variable_get('commerce_order_reminder_settings');
+  if ($reminder_settings['commerce_order_reminder_status']) {
+    $first = REQUEST_TIME - $reminder_settings['commerce_order_reminder_first_reminder'];
+    $latest = REQUEST_TIME - $reminder_settings['commerce_order_reminder_last_reminder'];
+    $reminders = $reminder_settings['commerce_order_reminder_number'];
+    $allowed_order_statuses = array();
+    foreach ($reminder_settings['commerce_order_reminder_send_order_status'] as $status_machine_name => $checked) {
+      if (!empty($checked)) {
+        $allowed_order_statuses[] = $status_machine_name;
+      }
+    }
+    // Get ids where order age is less than order max age and order wasn't paid.
+    $orders = db_query(
+      'SELECT co.order_id, co.status, co.uid, cor.last_reminded, cor.reminders
+        FROM {commerce_order} co
+        LEFT JOIN {commerce_order_reminder} cor
+        ON co.order_id = cor.order_id
+        WHERE co.created < :firstrem
+        AND co.created > :latest
+        AND co.status IN (:statuses)',
+      array(
+        ':firstrem' => $first,
+        ':latest' => $latest,
+        ':statuses' => $allowed_order_statuses,
+      ));
+    $orders = $orders->fetchAllAssoc('order_id');
+    // Includes file with custom functions.
+    module_load_include('inc', 'commerce_order_reminder', 'commerce_order_reminder');
+    foreach ($orders as $order_id => $info) {
+      // Check if user contains selected roles.
+      $user = user_load($info->uid);
+      $roles = $reminder_settings['commerce_order_reminder_user_roles'];
+      foreach ($roles as $key => $value) {
+        if (empty($roles[$key])) {
+          unset($roles[$key]);
+        }
+      }
+      $user_has_roles = (bool) array_intersect_key($user->roles, $roles);
+      // Email if the number of sent reminders is less than the total number.
+      // And if the last sent reminder is later than $period ago.
+      $period = $reminder_settings['commerce_order_reminder_period'];
+      $reminded_ago = REQUEST_TIME - $info->last_reminded;
+      if ($user_has_roles && $info->reminders < $reminders && $period < $reminded_ago) {
+        $remind_number = !empty($info->reminders) ? $info->reminders + 1 : 1;
+        commerce_order_reminder_send_reminder($order_id, $remind_number);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_mail().
+ *
+ * Adds subject, body and proper from line to emails.
+ */
+function commerce_order_reminder_mail($key, &$message, $params) {
+  switch ($key) {
+    case 'email_reminder':
+    case 'test_email':
+      $message['from'] = $message['headers']['From'] = $message['params']['from_full'];
+      $message['subject'] = $message['params']['subject'];
+      $message['body'][] = $message['params']['body'];
+      if (!empty($params['headers'])) {
+        $message['headers'] += $params['headers'];
+      }
+      $a=1;
+      break;
+  }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function commerce_order_reminder_permission() {
+  return array(
+    'administer commerce order reminders' => array(
+      'title' => t('Administer commerce order reminders'),
+      'description' => t('Change email reminders texts, frequency, number of reminders, etc.'),
+    ),
+  );
+}

@@ -1,0 +1,226 @@
+<?php
+
+/**
+ * @file
+ * Contains Stihl Pricing Year entity functions.
+ */
+
+// Define administrative uri locations.
+define('STIHL_PRICING_YEARS_VIEW_URI', 'admin/content/stihl-pricing-years');
+define('STIHL_PRICING_YEARS_MANAGE_URI', 'admin/config/stihl/stihl-pricing-years');
+
+/**
+ * Implements hook_entity_info().
+ */
+function stihl_pricing_years_entity_info() {
+
+  $info['stihl_pricing_years'] = array(
+    'label' => t('Stihl Pricing Year'),
+    'base table' => 'stihl_pricing_year',
+    'entity keys' => array('id' => 'id'),
+    'label callback' => 'stihl_pricing_years_label_callback',
+
+    'entity class' => 'StihlPricingYearsEntity',
+    'controller class' => 'StihlPricingYearsController',
+
+    'load hook' => 'stihl_pricing_years_load',
+    'uri callback' => 'entity_class_uri',
+
+    'admin ui' => array(
+      'path' => STIHL_PRICING_YEARS_MANAGE_URI,
+      'controller class' => 'StihlPricingYearsUIController',
+      'menu wildcard' => '%stihl_pricing_years',
+      'file' => 'inc/stihl_pricing_years.admin.inc',
+    ),
+
+    'module' => 'stihl_pricing_years',
+    'access callback' => 'stihl_pricing_years_access_callback',
+
+    'views controller class' => 'EntityDefaultViewsController',
+  );
+
+  return $info;
+}
+
+/**
+ * Implements hook_menu().
+ */
+function stihl_pricing_years_menu() {
+
+  $items['admin/content/stihl-pricing-years/%'] = array(
+    'title' => 'Stihl Distributor Pricing Year',
+    'page callback' => 'stihl_pricing_years_view_entity',
+    'page arguments' => array(3),
+    'access callback' => 'stihl_pricing_years_access_callback',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function stihl_pricing_years_menu_alter(&$items) {
+  // Redirect to `admin/config/stihl/orders` for consistency.
+  $items[STIHL_PRICING_YEARS_MANAGE_URI]['page callback'] = 'drupal_goto';
+  $items[STIHL_PRICING_YEARS_MANAGE_URI]['page arguments'] = array('admin/config/stihl/orders');
+}
+
+/**
+ * Implements hook_menu_link_alter().
+ */
+function stihl_pricing_years_menu_link_alter(&$link) {
+  // Hide the link from the admin menu. Configuration for this entity will be
+  // handled via the `stihl_orders` config.
+  if ($link['link_path'] == STIHL_PRICING_YEARS_MANAGE_URI) {
+    $link['hidden'] = TRUE;
+  }
+}
+
+/**
+ * Access callback for Pricing Year entities.
+ *
+ * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+ */
+function stihl_pricing_years_access_callback($op = NULL, $entity = NULL, $account = NULL) {
+  switch ($op) {
+    case 'view':
+      return user_access('administer site configuration', $account) || user_access('access content', $account);
+
+    default:
+      return user_access('administer site configuration', $account);
+  }
+}
+
+/**
+ * Entity display page.
+ *
+ * @param int $id
+ *   The id of the entity.
+ *
+ * @return array
+ *   Render array.
+ */
+function stihl_pricing_years_view_entity($id) {
+  return entity_view('stihl_pricing_years', array(stihl_pricing_years_load($id)));
+}
+
+/**
+ * Auto loader for pricing year entities.
+ *
+ * @param int $id
+ *   The id of the entity.
+ * @param bool $reset
+ *   Whether to reset cache.
+ *
+ * @return object
+ *   Single entity object.
+ */
+function stihl_pricing_years_load($id, $reset = FALSE) {
+  $entities = stihl_pricing_years_load_multiple(array($id), array(), $reset);
+  return reset($entities);
+}
+
+/**
+ * Load multiple entities with optional conditions.
+ *
+ * @param array $entity_ids
+ *   An array of entity ids.
+ * @param array $conditions
+ *   An array of conditions to filter query.
+ * @param bool $reset
+ *   Whether to reset cache.
+ *
+ * @return array
+ *   An array of entity objects.
+ */
+function stihl_pricing_years_load_multiple(array $entity_ids = array(), array $conditions = array(), $reset = FALSE) {
+  return entity_load('stihl_pricing_years', $entity_ids, $conditions, $reset);
+}
+
+/**
+ * Returns the pricing year by the ID.
+ *
+ * @param int $id
+ *   The unique ID of the Pricing Year Entity.
+ *
+ * @return mixed
+ *   Returns the pricing year value (YYYY) or FALSE if not found.
+ */
+function stihl_pricing_years_get_year_by_id($id) {
+  $query = 'SELECT pricing_year FROM {stihl_pricing_year} WHERE id = :id';
+  $pricing_year = db_query($query, [':id' => $id])->fetchField();
+  return $pricing_year;
+}
+
+/**
+ * Creates a label for the Stihl Pricing Years Entity.
+ *
+ * @return string
+ *   Concatenated string containing the Pricing Year's year and details.
+ */
+function stihl_pricing_years_label_callback($entity, $entity_type) {
+  // If this is a new entity, just return an empty string so that we
+  // can avoid "undefined property" errors.
+  if (isset($entity->is_new)) {
+    return '';
+  }
+  return $entity->pricing_year . ' - ' . $entity->details;
+}
+
+/**
+ * Update the associated_pricing field of a Stihl Profile entity.
+ *
+ * @param object $profile
+ *   Stihl profiles entity object.
+ * @param object $pricing_year
+ *   Stihl pricing year entity object.
+ *
+ * @return bool
+ *   returns TRUE if the profile was updated successfully; FALSE otherwise.
+ */
+function stihl_pricing_years_update_associated_profile($profile, $pricing_year) {
+  $pricing_year_id = $pricing_year->id;
+  $associated_pricing = $profile->associated_pricing[LANGUAGE_NONE] ?? array();
+  $pricing_year_profiles = $pricing_year->profiles ?? array();
+
+  // Use array_column for the simplicity of dealing with an array of
+  // Pricing Year IDs as opposed to an array of keyed arrays.
+  $associated_pricing = array_column($associated_pricing, 'target_id');
+  $pricing_year_ids = $associated_pricing;
+
+  // Determine if this profile ($profile) should be associated with this
+  // Pricing Year ($pricing_year) by checking if this profile's ID was selected
+  // when configuring the Pricing Year.
+  $associate_profile = in_array($profile->id, $pricing_year_profiles);
+
+  // If this profile needs to be associated with this Pricing Year,
+  // add it to the array of Pricing Year IDs if doesn't already exist.
+  if ($associate_profile && !in_array($pricing_year_id, $pricing_year_ids)) {
+    $pricing_year_ids[] = $pricing_year_id;
+  }
+
+  // Filter the array of Pricing Year IDs to remove this Pricing Year if this
+  // profile was not selected when configuring the Pricing Year.
+  $pricing_year_ids = array_filter($pricing_year_ids, function ($id) use ($associate_profile, $pricing_year_id) {
+    return $associate_profile || $id != $pricing_year_id;
+  });
+
+  // Only save the profile entity if there is a difference between the Pricing
+  // Years currently associated with the profile ($associated_pricing) and the
+  // values that should be associated with the profile ($pricing_year_ids);
+  // Meaning: this Pricing Year ID needs to be added or removed from this
+  // profile's associated_pricing field.
+  if (array_diff($pricing_year_ids, $associated_pricing) || array_diff($associated_pricing, $pricing_year_ids)) {
+
+    // Map the array of Pricing Year IDs back to an array of keyed arrays so
+    // that we can save the profile entity.
+    $pricing_year_ids = array_map(function ($target_id) {
+      return array('target_id' => $target_id);
+    }, $pricing_year_ids);
+
+    $profile->associated_pricing[LANGUAGE_NONE] = $pricing_year_ids;
+    return $profile->save();
+  }
+  return TRUE;
+}

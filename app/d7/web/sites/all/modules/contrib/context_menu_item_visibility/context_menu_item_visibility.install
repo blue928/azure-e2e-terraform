@@ -1,0 +1,37 @@
+<?php
+
+/**
+ * @file
+ * Storage for context names against menu items.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function context_menu_item_visibility_schema() {
+  $schema['menu_links_visibility_context'] = array(
+    'fields' => array(
+      'mlid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => "The menu link's ID from {menu_links}.mlid.",
+      ),
+      'context' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'description' => "The context",
+      ),
+    ),
+    'primary key' => array('mlid', 'context'),
+    'foreign keys' => array(
+      'menu_links' => array(
+        'table' => 'menu_links',
+        'columns' => array('mlid' => 'mlid'),
+      ),
+    ),
+  );
+
+  return $schema;
+}

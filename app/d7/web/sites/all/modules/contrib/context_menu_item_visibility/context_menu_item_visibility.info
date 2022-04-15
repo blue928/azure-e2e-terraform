@@ -1,0 +1,13 @@
+name = Context menu item visibility
+description = Visibility for menu items based on context
+core = 7.x
+dependencies[] = menu
+dependencies[] = menu_item_visibility
+dependencies[] = context
+
+; Information added by Drupal.org packaging script on 2016-12-17
+version = "7.x-1.0"
+core = "7.x"
+project = "context_menu_item_visibility"
+datestamp = "1481990585"
+

@@ -1,0 +1,88 @@
+<?php
+
+/**
+ * @file
+ * Contains schemas & updates for the Stihl Core module.
+ */
+
+/**
+ * STIHL-202: Add search-related roles to Stihl users.
+ */
+function stihl_core_update_7001() {
+  $stihl_roles = array_filter(user_roles(TRUE), function ($v, $k) {
+    return in_array($v, array('BDuser', 'RLadmin'));
+  }, ARRAY_FILTER_USE_BOTH);
+  $permissions = array(
+    'search content',
+    'access stihl_products search_api_page',
+  );
+  array_walk(array_flip($stihl_roles), function ($rid) use ($permissions) {
+    user_role_grant_permissions($rid, $permissions);
+  });
+}
+
+/**
+ * STIHL-214: Add "classic employee" role to the system.
+ *
+ * Need to add a "classic employee" role to all @knowclassic.com users so that
+ * we may explicitly exclude them from being included in the "TO" field on out-
+ * bound general order status emails.
+ */
+function stihl_core_update_7002() {
+  if (!$role = user_role_load_by_name('classic employee')) {
+    $role = new stdClass();
+    $role->name = 'classic employee';
+    user_role_save($role);
+  }
+
+  $all_users = entity_load('user');
+  foreach ($all_users as $user) {
+    if (strstr($user->mail, '@knowclassic.com') != FALSE) {
+      $user->roles[$role->rid] = $role->name;
+      user_save($user);
+    }
+  }
+}
+
+/**
+ * STIHL-160: Add edit own bd permission to BDuser and administrator roles.
+ */
+function stihl_core_update_7003() {
+  $roles = array_filter(user_roles(TRUE), function ($v, $k) {
+    return in_array($v, array('BDuser', 'administrator'));
+  }, ARRAY_FILTER_USE_BOTH);
+
+  array_walk(array_flip($roles), function ($rid) {
+    user_role_grant_permissions($rid, array('edit own bd profile'));
+  });
+}
+
+/**
+ * STIHL-376: Change Classic users' user names to match email user names.
+ */
+function stihl_core_update_7004() {
+  $classic_users = array_filter(entity_load('user'), function ($user) {
+    return strpos($user->mail, 'knowclassic.com');
+  });
+  foreach ($classic_users as $uid => $user) {
+    $mail_name = explode('@', $user->mail)[0];
+    $user->name = $mail_name;
+    user_save($user);
+  }
+}
+
+/**
+ * STIHL-595: Remove system table records of uninstall modules.
+ */
+function stihl_core_update_7005() {
+  // Modules that where removed still have records in system table.
+  $remove_items = [
+    'ldap_profile',
+    'stihl_bd_profiles_feature',
+    'stihl_announcements_feature',
+  ];
+
+  array_walk($remove_items, function ($item) {
+    db_delete('system')->condition('name', $item)->execute();
+  });
+}

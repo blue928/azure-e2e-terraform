@@ -1,0 +1,199 @@
+name = Guardr
+distribution_name = Guardr
+description = Drupal distribution for enhanced security of web applications through contributed modules.
+version = 7.x-2.49
+core = 7.x
+
+; Core
+; ----
+dependencies[] = block
+dependencies[] = dblog
+dependencies[] = system
+dependencies[] = update
+dependencies[] = user
+
+
+; Contrib
+; -------
+; PCI v3.0 requires 15 minute session timeout.
+dependencies[] = autologout
+dependencies[] = clear_password_field
+dependencies[] = diskfree
+dependencies[] = email_confirm
+dependencies[] = diff
+; Ejector seat pairs with the autologout module.
+dependencies[] = ejectorseat
+dependencies[] = entitycache
+dependencies[] = field_permissions
+dependencies[] = flood_control
+dependencies[] = guardr_core
+dependencies[] = hide_php_fatal_error
+dependencies[] = libraries
+dependencies[] = login_security
+; PCI does not permit password autocompletion
+dependencies[] = no_autocomplete
+dependencies[] = paranoia
+; PCI v3.0 requires 90 day password expiration
+; and 7 character minimum containing alphabetic and numeric.
+dependencies[] = password_policy
+dependencies[] = permission_watchdog
+dependencies[] = r4032login
+dependencies[] = realname
+dependencies[] = remove_generator
+dependencies[] = revision_all
+dependencies[] = role_watchdog
+dependencies[] = security_review
+dependencies[] = semiclean
+dependencies[] = session_expire
+; Shared accounts are not permitted by PCI v3.0.
+dependencies[] = session_limit
+dependencies[] = user_registrationpassword
+dependencies[] = username_enumeration_prevention
+dependencies[] = view_profiles_perms
+dependencies[] = x_originating_ip
+
+
+; Themes
+; ------
+
+
+; Settings
+; --------
+; General settings
+variables[site_name] = Guardr
+variables[error_level] = 0
+variables[user_register] = USER_REGISTER_ADMINISTRATORS_ONLY
+variables[password_policy_show_restrictions] = 1
+variables[dblog_row_limit] = 1000000
+variables[update_check_frequency] = 1
+variables[update_check_disabled] = 0
+variables[update_notification_threshold] = security
+
+; Guardr_core settings
+variables[guardr_intranet] = 1
+
+; Set login_security module defaults
+variables[login_security_activity_threshold] = 30
+variables[login_security_host_wrong_count] = 35
+variables[login_security_disable_core_login_error] = 1
+variables[login_security_last_login_timestamp] = 1
+variables[login_security_track_time] = 1
+variables[login_security_user_wrong_count] = 3
+
+; Disable password autocompletion for PCI
+variables[no_autocomplete_login_form] = 1
+variables[no_autocomplete_profile_form] = 1
+
+; Session expiration
+; Session age
+variables[session_expire_age] = 43200
+; Session type anonymous and authenticated
+variables[session_expire_mode] = 1
+; Perform garbage collection on every cron run
+variables[session_expire_interval] = 0
+
+; Set password_policy defaults
+variables[password_policy_new_login_change] = 0
+variables[password_policy_warning_subject] = "Password expiration warning at !site"
+variables[password_policy_warning_body] = "Your password at !site will expire in less than !days_left day(s).
+
+Please go to !edit_uri to change your password."
+
+; Notification Emails
+; -------------------
+; Set custom user_mail messages without references to user names or user ids.
+
+; "Welcome (new user created by administrator)"
+variables[user_mail_register_admin_created_subject] = "An administrator created an account for you at [site:name]"
+variables[user_mail_register_admin_created_body] = "A site administrator at [site:name] has created an account for you. You may now log in by clicking this link or copying and pasting it to your browser:
+
+[user:one-time-login-url]
+
+This link can only be used once to log in and will lead you to a page where you can set your password.
+
+After setting your password, you will be able to log in at [site:login-url] in the future using:
+
+username: Your username
+password: Your password
+
+--  [site:name] team"
+
+; "Welcome (awaiting approval)"
+variables[user_mail_register_pending_approval_subject] = "Account details at [site:name] (pending admin approval)"
+variables[user_mail_register_pending_approval_body] = "Thank you for registering at [site:name]. Your application for an account is currently pending approval. Once it has been approved, you will receive another e-mail containing information about how to log in, set your password, and other details.
+
+
+--  [site:name] team"
+
+; "Welcome (no approval required)"
+variables[user_mail_register_no_approval_required_subject] = "Account details at [site:name]"
+variables[user_mail_register_no_approval_required_body] = "Thank you for registering at [site:name]. You may now log in by clicking this link or copying and pasting it to your browser:
+
+[user:one-time-login-url]
+
+This link can only be used once to log in and will lead you to a page where you can set your password.
+
+After setting your password, you will be able to log in at [site:login-url] in the future using:
+
+username: Your username
+password: Your password
+
+--  [site:name] team"
+
+; "Account activation"
+variables[user_mail_status_activated_notify] = 1
+variables[user_mail_status_activated_subject] = "Account details at [site:name] (approved)"
+variables[user_mail_status_activated_body] = "Your account at [site:name] has been activated.
+
+You may now log in by clicking this link or copying and pasting it into your browser:
+
+[user:one-time-login-url]
+
+This link can only be used once to log in and will lead you to a page where you can set your password.
+
+After setting your password, you will be able to log in at [site:login-url] in the future using:
+
+username: Your username
+password: Your password
+
+--  [site:name] team"
+
+; "Account blocked"
+variables[user_mail_status_blocked_notify] = 0
+variables[user_mail_status_blocked_subject] = "Account details at [site:name] (blocked)"
+variables[user_mail_status_blocked_body] = "Your account on [site:name] has been blocked.
+
+--  [site:name] team"
+
+; "Account cancellation confirmation"
+variables[user_mail_cancel_confirm_subject] = "Account cancellation request at [site:name]"
+variables[user_mail_cancel_confirm_body] = "A request to cancel your account has been made at [site:name].
+
+You may now cancel your account on [site:url-brief] by clicking this link or copying and pasting it into your browser:
+
+[user:cancel-url]
+
+NOTE: The cancellation of your account is not reversible.
+
+This link expires in one day and nothing will happen if it is not used.
+
+--  [site:name] team"
+
+; "Account canceled"
+variables[user_mail_status_canceled_notify] = 0
+variables[user_mail_status_canceled_subject] = "Account details at [site:name] (canceled)"
+variables[user_mail_status_canceled_body] = "Your account on [site:name] has been canceled.
+
+--  [site:name] team"
+
+; "Password recovery"
+variables[user_mail_password_reset_subject] = "Replacement login information at [site:name]"
+variables[user_mail_password_reset_body] = "A request to reset the password for your account has been made at [site:name].
+
+You may now log in by clicking this link or copying and pasting it to your browser:
+
+[user:one-time-login-url]
+
+This link can only be used once to log in and will lead you to a page where you can set your password. It expires after one day and nothing will happen if it's not used.
+
+--  [site:name] team"

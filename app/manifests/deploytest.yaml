@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stihl7-deployment
+  labels:
+    app: stihl7
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stihl7
+  template:
+    metadata:
+      labels:
+        app: stihl7
+    spec:
+      containers:
+        - name: stihl7
+          image: stihlacrtest.azurecr.io/stihl7
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stihl7-loadbalancer-service
+  labels:
+    app: stihl7
+spec:
+  type: LoadBalancer
+  selector:
+    app: stihl7
+  ports:
+    - port: 80
+      targetPort: 80

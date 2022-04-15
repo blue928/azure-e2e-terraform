@@ -1,0 +1,95 @@
+<?php
+
+/**
+ * @file
+ * Table for reminders.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function commerce_order_reminder_schema() {
+  $schema = array();
+  $schema['commerce_order_reminder'] = array(
+    'description' => 'Email reminders sent to users who did not complete their orders',
+    'fields' => array(
+      'order_id' => array(
+        'description' => 'Order ID.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'reminders' => array(
+        'description' => 'How many the order was reminded.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'last_reminded' => array(
+        'description' => 'Timestamp when the last reminder was sent.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+    ),
+    'indexes' => array(
+      'order_id' => array('order_id'),
+    ),
+    'foreign keys' => array(
+      'order_id' => array(
+        'table' => 'commerce_order',
+        'columns' => array('order_id' => 'order_id'),
+      ),
+    ),
+    'primary key' => array('order_id'),
+  );
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ */
+function commerce_order_reminder_install() {
+  $defaults = array(
+    'commerce_order_reminder_status' => 0,
+    'commerce_order_reminder_send_if_empty' => 0,
+    'commerce_order_reminder_send_order_status' => array(
+      'cart' => 'cart',
+      'checkout_checkout' => 'checkout_checkout',
+      'canceled' => 0,
+      'pending' => 0,
+      'completed' => 0,
+      'processing' => 0,
+      'checkout_review' => 0,
+      'checkout_payment' => 0,
+      'checkout_complete' => 0,
+    ),
+    'commerce_order_reminder_period' => 172800,
+    'commerce_order_reminder_last_reminder' => 259200,
+    'commerce_order_reminder_from_name' => variable_get('site_name'),
+    'commerce_order_reminder_from_email' => variable_get('site_mail'),
+    'commerce_order_reminder_number' => 1,
+    'commerce_order_reminder_bcc' => '',
+    'commerce_order_reminder_test_email_address' => variable_get('site_mail'),
+    'commerce_order_reminder_user_roles' => array('1' => '1', '2' => '2'),
+    'commerce_order_reminder_email_texts' => array(
+      '1' => array(
+        'commerce_order_reminder_subject' => 'Your order [commerce-order:order-id] at [site:name]',
+        'commerce_order_reminder_body' => "Hello [commerce-order:commerce-customer-billing:commerce_customer_address:name-line],\r\n \r\nThank you for being interested in our products. We noticed that you have placed an order but have not completed it yet. We value every single our visitor and will be happy to help you with your choice. Do you have any questions for us? Feel free to contact us at [site:mail].\r\n \r\nBest regards,\r\n[site:name] team.",
+      ),
+    ),
+  );
+  variable_set('commerce_order_reminder_settings', $defaults);
+  $t = get_t();
+  drupal_set_message($t("Thank you for installing Commerce Order Reminder. Now you can set up the module on <a href='/admin/commerce/config/commerce-order-reminder'>the settings page</a>."));
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function commerce_order_reminder_uninstall() {
+  db_delete('variable')
+    ->condition('name', 'commerce_order_reminder_%', 'LIKE')
+    ->execute();
+}

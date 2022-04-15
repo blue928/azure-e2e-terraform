@@ -1,0 +1,49 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the deploy_info module.
+ */
+
+/**
+ * Implements hook_requirements().
+ *
+ * Display the contents of VERSION.txt on the status report page.
+ */
+function classic_core_requirements($phase) {
+  $requirements = array();
+  if ($phase === 'runtime' && file_exists('profiles/classic/VERSION.txt')) {
+    $version = trim(file_get_contents('profiles/classic/VERSION.txt'));
+    $requirements['classic'] = array(
+      'title' => 'Distribution version (Classic)',
+      'value' => check_plain($version),
+      'severity' => REQUIREMENT_OK,
+    );
+  }
+  return $requirements;
+}
+
+/**
+ * Enable the deploy_info module.
+ */
+function classic_core_update_7001() {
+  module_enable(array('deploy_info'), FALSE);
+}
+
+/**
+ * GENERAL-169: Disable Drupal's automatic cron.
+ */
+function classic_core_update_7002() {
+  variable_set('cron_safe_threshold', 0);
+}
+
+/**
+ * GENERAL-197: Change admin menus from toolbar to navbar.
+ *
+ * @see classic_install()
+ */
+function classic_core_update_7003() {
+  module_disable(array('toolbar'), FALSE);
+  drupal_uninstall_modules(array('toolbar'), FALSE);
+  module_enable(array('navbar'), TRUE);
+}

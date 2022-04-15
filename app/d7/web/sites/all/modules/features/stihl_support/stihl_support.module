@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Stihl Support feature.
+ */
+
+include_once 'stihl_support.features.inc';

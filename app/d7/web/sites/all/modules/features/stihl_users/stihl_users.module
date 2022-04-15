@@ -1,0 +1,26 @@
+<?php
+/**
+ * @file
+ * Drupal needs this blank file.
+ */
+
+/**
+ * Returns a user's full name; logged-in user if no $uid passed.
+ *
+ * @param int $uid
+ *   A given user's user ID.
+ *
+ * @return string
+ *   A give user's full name.
+ */
+function stihl_users_get_full_name($uid = NULL) {
+  try {
+    $uid = $uid ?: $GLOBALS['user']->uid;
+    $user_wrapper = entity_metadata_wrapper('user', $uid);
+    $full_name = $user_wrapper->field_first_name->value() . ' ' . $user_wrapper->field_last_name->value();
+  }
+  catch (Exception $e) {
+    watchdog('stihl_user', 'The function `stihl_core_user_get_full_name()` failed with exception @message.', array('@message'  => $e->getMessage()), WATCHDOG_ERROR);
+  }
+  return isset($full_name) ? $full_name : '';
+}

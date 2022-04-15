@@ -1,0 +1,192 @@
+<?php
+
+/**
+ * @file
+ * Contains profile entity functions.
+ */
+
+// Define administrative uri locations.
+define('STIHL_PROFILES_MANAGE_URI', 'admin/structure/stihl-profiles');
+define('STIHL_PROFILES_VIEW_URI', 'admin/content/stihl-profiles');
+
+/**
+ * Implements hook_entity_info().
+ */
+function stihl_profiles_entity_info() {
+
+  $info['stihl_profiles'] = array(
+    'label' => t('Stihl Profile'),
+    'fieldable' => TRUE,
+    'bundles' => array(
+      'stihl_profiles' => array(
+        'label' => t('Stihl Profiles'),
+      ),
+    ),
+
+    'base table' => 'stihl_profile',
+    'entity keys' => array(
+      'id' => 'id',
+      'label' => 'name',
+    ),
+
+    'entity class' => 'StihlProfilesEntity',
+    'controller class' => 'StihlProfilesController',
+
+    'load hook' => 'stihl_profiles_load',
+    'uri callback' => 'entity_class_uri',
+
+    'admin ui' => array(
+      'path' => STIHL_PROFILES_MANAGE_URI,
+      'controller class' => 'StihlProfilesUIController',
+      'menu wildcard' => '%stihl_profiles',
+      'file' => 'stihl_profiles.admin.inc',
+    ),
+
+    'module' => 'stihl_profiles',
+    'access callback' => 'stihl_profiles_access_callback',
+
+    'views controller class' => 'EntityDefaultViewsController',
+  );
+
+  return $info;
+}
+
+/**
+ * Implements hook_menu().
+ */
+function stihl_profiles_menu() {
+
+  $items['admin/content/stihl-profiles/%'] = array(
+    'title' => 'Stihl Distributor Profile',
+    'page callback' => 'stihl_profiles_view_entity',
+    'page arguments' => array(3),
+    'access callback' => 'stihl_profiles_access_callback',
+    'access arguments' => array('view', 'stihl_profile', 3),
+  );
+  $items['branch-distributor-profile'] = array(
+    'title' => 'My Distributor Profile',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('stihl_profiles_user_update_bd_form'),
+    'access arguments' => array('edit own bd profile'),
+    'menu_name' => 'user-menu',
+    'weight' => -50,
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'includes/stihl_profiles_user_update_bd_form.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function stihl_profiles_permission() {
+  return array(
+    'view any bd profile' => array(
+      'title' => t('View any BD profile'),
+      'description' => t('Edit any Branch Distributor profile.'),
+    ),
+    'edit own bd profile' => array(
+      'title' => t('Edit own BD profile'),
+      'description' => t('Edit own Branch Distributor profile.'),
+    ),
+    'edit any bd profile' => array(
+      'title' => t('Edit any BD profile'),
+      'description' => t('Edit any Branch Distributor profile.'),
+    ),
+    'delete own bd profile' => array(
+      'title' => t('Delete own BD profile'),
+      'description' => t('Delete own Branch Distributor profile.'),
+    ),
+    'delete any bd profile' => array(
+      'title' => t('Delete any BD profile'),
+      'description' => t('Delete any Branch Distributor profile.'),
+    ),
+    'create bd profile' => array(
+      'title' => t('Create a BD profile'),
+      'description' => t('Create a Branch Distributor profile.'),
+    ),
+  );
+}
+
+/**
+ * Access callback for Stihl profile entities.
+ *
+ * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+ */
+function stihl_profiles_access_callback($op = NULL, $profile_entity = NULL, $account = NULL) {
+  switch ($op) {
+    case 'view':
+      return user_access('administer site configuration', $account) || user_access('view any bd profile', $account);
+
+    default:
+      return user_access('administer site configuration', $account);
+  }
+}
+
+/**
+ * Entity display page.
+ *
+ * @param int $id
+ *   The id of the entity.
+ *
+ * @return array
+ *   Render array.
+ */
+function stihl_profiles_view_entity($id) {
+  return entity_view('stihl_profiles', array(stihl_profiles_load($id)));
+}
+
+/**
+ * Auto loader for profile entities.
+ *
+ * @param int $id
+ *   The id of the entity.
+ * @param bool $reset
+ *   Whether to reset cache.
+ *
+ * @return object
+ *   Single entity object.
+ */
+function stihl_profiles_load($id, $reset = FALSE) {
+  $entities = stihl_profiles_load_multiple(array($id), NULL, $reset);
+  return reset($entities);
+}
+
+/**
+ * Load multiple entities with optional conditions.
+ *
+ * @param array $entity_ids
+ *   An array of entity ids.
+ * @param array $conditions
+ *   An array of conditions to filter query.
+ * @param bool $reset
+ *   Whether to reset cache.
+ *
+ * @return array
+ *   An array of entity objects.
+ */
+function stihl_profiles_load_multiple($entity_ids = array(), $conditions = array(), $reset = FALSE) {
+  return entity_load('stihl_profiles', $entity_ids, $conditions, $reset);
+}
+
+/**
+ * Implements hook_field_attach_form().
+ *
+ * Use this to modify the associated_pricing entity reference fields so that it
+ * does not display "default" pricing years.
+ *
+ * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+ */
+function stihl_profiles_field_attach_form($entity_type, $entity, &$form, &$form_state, $langcode) {
+  if ($entity_type == 'stihl_profiles') {
+    $associated_pricing_options =& $form['associated_pricing'][LANGUAGE_NONE]['#options'];
+
+    foreach (array_keys($associated_pricing_options) as $id) {
+      $pricing_year_wrapper = entity_metadata_wrapper('stihl_pricing_years', $id);
+      if ($pricing_year_wrapper->default_pricing->value()) {
+        unset($associated_pricing_options[$id]);
+      }
+    }
+  }
+}

@@ -1,0 +1,69 @@
+name = Classic Bootstrap
+description = Classic subtheme of the LESS Bootstrap framework.
+core = 7.x
+base theme = bootstrap
+
+
+;;;;;;;;;;;;;;;;;;;;;
+;; Regions
+;;;;;;;;;;;;;;;;;;;;;
+
+regions[navigation]     = 'Navigation'
+regions[sidemenu]       = 'Side Menu'
+regions[highlighted]    = 'Highlighted'
+regions[help]           = 'Help'
+regions[content]        = 'Content'
+regions[sidebar_first]  = 'Primary'
+regions[sidebar_second] = 'Secondary'
+regions[footer]         = 'Footer'
+regions[page_top]       = 'Page top'
+regions[page_bottom]    = 'Page bottom'
+
+
+;;;;;;;;;;;;;;;;;;;;;
+;; Stylesheets
+;;;;;;;;;;;;;;;;;;;;;
+
+stylesheets[all][] = css/style.css
+
+;;;;;;;;;;;;;;;;;;;;;
+;; Scripts
+;;;;;;;;;;;;;;;;;;;;;
+
+scripts[] = '../../../libraries/bootstrap/js/affix.js'
+scripts[] = '../../../libraries/bootstrap/js/alert.js'
+scripts[] = '../../../libraries/bootstrap/js/button.js'
+scripts[] = '../../../libraries/bootstrap/js/carousel.js'
+scripts[] = '../../../libraries/bootstrap/js/collapse.js'
+scripts[] = '../../../libraries/bootstrap/js/modal.js'
+scripts[] = '../../../libraries/bootstrap/js/tooltip.js'
+scripts[] = '../../../libraries/bootstrap/js/popover.js'
+scripts[] = '../../../libraries/bootstrap/js/scrollspy.js'
+scripts[] = '../../../libraries/bootstrap/js/tab.js'
+scripts[] = '../../../libraries/bootstrap/js/transition.js'
+scripts[] = '../../../libraries/modernizr/modernizr.js'
+scripts[] = 'js/classic.js'
+
+; Disable BootstrapCDN so the compiled LESS source files can be used.
+settings[bootstrap_cdn] = ''
+
+;;;;;;;;;;;;;;;;;;;;;
+;; Settings
+;;;;;;;;;;;;;;;;;;;;;
+
+; Colors
+settings[logo_bgcolor] = ''
+settings[navbar_bgcolor] = ''
+settings[links_color] = ''
+
+; Popovers
+settings[bootstrap_popover_enabled] = ''
+
+; Tooltips
+settings[bootstrap_tooltip_enabled] = ''
+
+; Dropdown Menus
+settings[bootstrap_dropdown_options] = 'default'
+
+; jQuery Update
+settings[jquery_update_jquery_version] = 2.1

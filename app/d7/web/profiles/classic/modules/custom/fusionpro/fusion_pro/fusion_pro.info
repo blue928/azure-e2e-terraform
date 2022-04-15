@@ -1,0 +1,7 @@
+; $Id$
+name = Fusion Pro
+description = Provides Fusion Pro templating server integration.
+package = Classic
+core = 7.x
+configure = admin/config/services/fusion_pro
+files[] = fusion_pro_stream_wrappers.inc

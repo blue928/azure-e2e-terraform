@@ -1,0 +1,234 @@
+<?php
+
+/**
+ * @file
+ * Installation and schema hooks for Stihl profiles.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function stihl_profiles_schema() {
+
+  $schema['stihl_profile'] = array(
+    'description' => 'The base table for Stihl profiles',
+    'fields' => array(
+      'id' => array(
+        'description' => 'The primary identifier for a profile entity.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'name' => array(
+        'description' => 'The distributor name.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'api_bd_identifier' => array(
+        'description' => 'The BDIdentifier associated with this distributor in the PowerChord API.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'number_on_tag' => array(
+        'description' => 'Boolean indicating whether to display part numbers on hangtags.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'tiny',
+      ),
+      'only_vertical_tag' => array(
+        'description' => 'Boolean indicating whether to display hangtags vertical.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'tiny',
+      ),
+      'hangtag_without_pricing' => array(
+        'description' => 'Boolean indicating whether to display pricing on hangtags.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'tiny',
+      ),
+      'address_1' => array(
+        'description' => 'The distributor address.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'address_2' => array(
+        'description' => 'The distributor address.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'city' => array(
+        'description' => 'The distributor city.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'state' => array(
+        'description' => 'The distributor state.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'zip' => array(
+        'description' => 'The distributor zip.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'phone' => array(
+        'description' => 'The distributor phone number.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'shipping_address_1' => array(
+        'description' => 'The distributor shipping address.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'shipping_address_2' => array(
+        'description' => 'The distributor shipping address.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'shipping_city' => array(
+        'description' => 'The distributor shipping city.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'shipping_state' => array(
+        'description' => 'The distributor shipping state.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'shipping_zip' => array(
+        'description' => 'The distributor shipping zip.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'shipping_phone' => array(
+        'description' => 'The distributor shipping phone number.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'shipping_method_details' => array(
+        'description' => 'The shipping method details.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'shipping_provider_name_1' => array(
+        'description' => 'The shipping provider name 1.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'shipping_provider_account_1' => array(
+        'description' => 'The shipping provider account 1.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'shipping_provider_name_2' => array(
+        'description' => 'The shipping provider name 2.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'shipping_provider_account_2' => array(
+        'description' => 'The shipping provider account 2.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'shipping_provider_name_3' => array(
+        'description' => 'The shipping provider name 3.',
+        'type' => 'varchar',
+        'length' => 355,
+      ),
+      'shipping_provider_account_3' => array(
+        'description' => 'The shipping provider account 3.',
+        'type' => 'varchar',
+        'length' => 355,
+      ),
+      'created' => array(
+        'description' => 'The Unix timestamp when created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'changed' => array(
+        'description' => 'The Unix timestamp when recently saved.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('id'),
+    'indexes' => array(
+      'id' => array('id'),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_update_7100().
+ *
+ * Add the BDIdentifier field associated with the distributor
+ * in the PowerChord API.
+ */
+function stihl_profiles_update_7100() {
+  $schema = drupal_get_schema('stihl_profile');
+  $field = 'api_bd_identifier';
+
+  // Add the new field to the db table.
+  db_add_field('stihl_profile', $field, $schema['fields'][$field]);
+
+  // Load the existing profile entities.
+  $profiles = stihl_profiles_load_multiple(FALSE);
+  $profile_map = [
+    '1' => '900225',
+    '2' => '900258',
+    '3' => '900407',
+    '4' => '900025',
+    '5' => '900024',
+    '6' => '900026',
+    '7' => '900021',
+    '8' => '900023',
+    '9' => '900022',
+    '10' => '902100',
+    '11' => '902106',
+  ];
+
+  // Map the existing profiles to the values provided by STIHL.
+  foreach ($profiles as $profile) {
+    $bdid = $profile_map[$profile->id] ?: NULL;
+    $profile->api_bd_identifier = $bdid;
+    $profile->save();
+  }
+}
+
+/**
+ * STIHL-485: Create entity reference field.
+ */
+function stihl_profiles_update_7101() {
+
+  // Create an entityreference field.
+  $field = array(
+    'field_name' => 'associated_pricing',
+    'type' => 'entityreference',
+    'settings' => array('target_type' => 'stihl_pricing_years'),
+    'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+  );
+  field_create_field($field);
+
+  $instance = array(
+    'field_name' => 'associated_pricing',
+    'entity_type' => 'stihl_profiles',
+    'bundle' => 'stihl_profiles',
+    'label' => 'Associated Pricing Years',
+    'default_value' => NULL,
+    'description' => 'The Pricing Years associated with this BD.',
+    'widget' => array('type' => 'options_buttons'),
+  );
+  field_create_instance($instance);
+}

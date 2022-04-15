@@ -1,0 +1,10 @@
+name = Stihl Distributor Pricing Years
+description = Stihl distributor product pricing years as custom entities.
+package = Stihl
+core = 7.x
+
+dependencies[] = entity
+
+files[] = 'inc/StihlPricingYearsEntity.inc'
+files[] = 'inc/StihlPricingYearsController.inc'
+files[] = 'inc/StihlPricingYearsUIController.inc'

@@ -1,0 +1,355 @@
+<?php
+
+/**
+ * @file
+ * Code for the Stihl Product Views feature.
+ */
+
+include_once 'stihl_product_views.features.inc';
+
+/**
+ * Implements hook_menu().
+ */
+function stihl_product_views_menu() {
+
+  $items['product/%'] = array(
+    'title' => 'Product Display',
+    'type' => MENU_CALLBACK,
+    'page callback' => 'stihl_product_views_product_page',
+    'page arguments' => array(1),
+    'access arguments' => array('access content'),
+    'file' => 'inc/stihl_product_views_product_page.inc',
+  );
+  $items['admin/structure/preview-image-status'] = array(
+    'title' => 'Preview Image Status',
+    'description' => 'View a list of products without hang tag preview images.',
+    'type' => MENU_NORMAL_ITEM,
+    'page callback' => 'stihl_product_views_preview_image_status_page',
+    'access arguments' => array('administer site configuration'),
+    'file' => 'inc/stihl_product_views_preview_image_status.inc',
+    'theme callback' => 'variable_get',
+    'theme arguments' => array('theme_default'),
+  );
+
+  $items['hangtags'] = array(
+    'title' => 'Hangtag Orders',
+    'type' => MENU_CALLBACK,
+    'page callback' => 'stihl_product_views_hangtag_page',
+    'menu_name' => 'main-menu',
+    'access arguments' => array('access content'),
+  );
+  $items['pop'] = array(
+    'title' => 'POP Orders',
+    'type' => MENU_CALLBACK,
+    'menu_name' => 'main-menu',
+    'page callback' => 'stihl_product_views_pop_page',
+    'access arguments' => array('access content'),
+  );
+
+  return $items;
+}
+
+
+/**
+ * Implements dummy page callback for hangtags.
+ */
+function stihl_product_views_hangtag_page() {
+  return "";
+}
+
+/**
+ * Implements dummy page callback for hangtags.
+ */
+function stihl_product_views_pop_page() {
+  return "";
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function stihl_product_views_block_info() {
+
+  $blocks['pop_catalog_menu_block'] = array(
+    'info' => t('POP Menu'),
+    'description'=>t('This is custom pop menu block'),
+    'cache' => DRUPAL_NO_CACHE // this will exclude the block from Drupal cache
+  );
+
+  return $blocks;
+}
+
+/**
+ * Implementation of hook_views_query_alter
+ * @param type $view
+ * @param type $query
+ */
+function stihl_product_views_views_query_alter(&$view, &$query) {
+  // Alter view for pop catalog as views is unable to provide a filter grouping necessary to output this correctly.
+  if ($view->name == 'pop_catalog' && $view->current_display == 'pop_catalog') {
+    // Join the available until field.
+    $join = new views_join();
+    $join->table = 'field_data_field_available_until';
+    $join->field = 'entity_id';
+    $join->left_table = 'commerce_product';
+    $join->left_field = 'product_id';
+    $join->type = 'LEFT';
+    $join->extra = "field_data_field_available_until.entity_type = 'commerce_product' AND field_data_field_available_until.deleted = '0'";
+    $query->add_relationship('field_data_field_available_until', $join, 'commerce_product');
+
+    // Add an expression to filter on evergreen OR (pop_item AND field_available_until).
+    $query->add_where_expression($view->options['group'], "commerce_product.type = 'evergreen' OR (commerce_product.type = 'pop_item' AND (DATE_FORMAT(field_data_field_available_until.field_available_until_value, '%Y-%m-%d\T%H:%i') >= NOW()))");
+  }
+
+//  SELECT DISTINCT commerce_order.order_number AS commerce_order_order_number, commerce_order.order_id AS order_id, commerce_order.uid AS commerce_order_uid, commerce_order.placed AS commerce_order_placed, users_commerce_order.name AS users_commerce_order_name, users_commerce_order.uid AS users_commerce_order_uid, commerce_order.status AS commerce_order_status, 'commerce_order' AS field_data_commerce_order_total_commerce_order_entity_type
+//FROM
+//{commerce_order} commerce_order
+//LEFT JOIN {users} users_commerce_order ON commerce_order.uid = users_commerce_order.uid
+//LEFT JOIN {field_data_commerce_customer_billing} field_data_commerce_customer_billing ON commerce_order.order_id = field_data_commerce_customer_billing.entity_id AND (field_data_commerce_customer_billing.entity_type = 'commerce_order' AND field_data_commerce_customer_billing.deleted = '0')
+//LEFT JOIN {commerce_customer_profile} commerce_customer_profile_field_data_commerce_customer_billing ON field_data_commerce_customer_billing.commerce_customer_billing_profile_id = commerce_customer_profile_field_data_commerce_customer_billing.profile_id
+//LEFT JOIN {field_data_commerce_line_items} field_data_commerce_line_items ON commerce_order.order_id = field_data_commerce_line_items.entity_id AND (field_data_commerce_line_items.entity_type = 'commerce_order' AND field_data_commerce_line_items.deleted = '0')
+//LEFT JOIN {commerce_line_item} commerce_line_item_field_data_commerce_line_items ON field_data_commerce_line_items.commerce_line_items_line_item_id = commerce_line_item_field_data_commerce_line_items.line_item_id
+//LEFT JOIN {field_data_commerce_product} commerce_line_item_field_data_commerce_line_items__field_data_commerce_product ON commerce_line_item_field_data_commerce_line_items.line_item_id = commerce_line_item_field_data_commerce_line_items__field_data_commerce_product.entity_id AND (commerce_line_item_field_data_commerce_line_items__field_data_commerce_product.entity_type = 'commerce_line_item' AND commerce_line_item_field_data_commerce_line_items__field_data_commerce_product.deleted = '0')
+//LEFT JOIN {commerce_product} commerce_product_field_data_commerce_product ON commerce_line_item_field_data_commerce_line_items__field_data_commerce_product.commerce_product_product_id = commerce_product_field_data_commerce_product.product_id
+//WHERE (( (commerce_order.type IN  ('pop')) AND( (users_commerce_order.uid = '15212') )))
+//ORDER BY commerce_order_placed DESC
+//LIMIT 50 OFFSET 0
+
+  // If not admin filter on current user.
+  if ($view->name == 'pop_orders' && $view->current_display == 'orders') {
+    global $user;
+    $check = array_intersect_key(array(3, 17), array_values($user->roles));
+    if (empty($check)) {
+      // Join the available until field.
+      $join = new views_join();
+      $join->table = 'users';
+      $join->field = 'uid';
+      $join->left_table = 'commerce_order';
+      $join->left_field = 'uid';
+      $join->type = 'LEFT';
+      $join->extra = "commerce_order.uid = users_commerce_order.uid";
+      $query->add_relationship('users_commerce_order', $join, 'commerce_order');
+
+      // Add an expression to filter on evergreen OR (pop_item AND field_available_until).
+      $query->add_where_expression($view->options['group'], "users_commerce_order.uid = $user->uid");
+    }
+
+  }
+
+}
+
+/**
+ * This hook generates the contents of the blocks.
+ */
+function stihl_product_views_block_view($delta = '') {
+
+  switch ($delta) {
+    case 'pop_catalog_menu_block':
+      $block['content'] = _pop_menu_block_content();
+  }
+  return $block;
+}
+
+/**
+ * Helper function for rendering pop catalog menu.
+ */
+function _pop_menu_block_content() {
+  // Grab event category
+  $panel = [
+    '#type' => 'container',
+    '#attributes' => [
+      'id' => 'pop-menu',
+    ],
+  ];
+
+  $currentPath = current_path();
+  $params = drupal_get_query_parameters();
+  $event_category = taxonomy_vocabulary_machine_name_load('pop_event_category');
+  $campaigns = taxonomy_get_tree($event_category->vid);
+  $items_category = taxonomy_vocabulary_machine_name_load('pop_item_category');
+  $assets = taxonomy_get_tree($items_category->vid);
+
+  $evergreen_tree = [
+    'item' => [
+      '#type' => 'html_tag',
+      '#tag' => 'div',
+      '#attributes' => [
+        'id' => 'evergreen',
+        'class' => ['menu-title'],
+        'parent-menu' => '#pop-menu',
+        'data-toggle' => 'collapse',
+        'data-target' => '#collapseEvergreen',
+        'aria-controls' => 'collapseEvergreen',
+        'aria-expanded' => 'false',
+        'role' => 'button',
+      ],
+      '#value' => "<a href='/pop-catalog/evergreen'><span>Evergreen</span><span class='caret'></span></a>",
+    ],
+    'wrapper' => [
+      '#type' => 'container',
+      '#attributes' => [
+        'id' => 'collapseEvergreen',
+        'class' => ['menu-wrapper', 'collapse'],
+        'aria-expanded' => 'false',
+      ],
+      'children' => [
+        'menu' => ['#theme_wrappers' => ['menu_tree']]
+      ]
+    ]
+  ];
+
+  if ($currentPath == 'pop-catalog/evergreen' || $currentPath == 'pop-catalog' || $currentPath == 'pop') {
+    $evergreen_tree['wrapper']['#attributes']['class'][] = 'in';
+    $evergreen_tree['wrapper']['#attributes']['aria-expanded']= 'true';
+    $evergreen_tree['item']['#attributes']['aria-expanded']= 'true';
+  } else {
+    $evergreen_tree['item']['#attributes']['class'][] = 'collapsed';
+  }
+
+  foreach($campaigns as $campaign) {
+    $count = _count_product('evergreen', $campaign->tid);
+    if ($count > 0) {
+      $menu_item = [
+        '#theme' => 'menu_link',
+        '#title' => $campaign->name,
+        '#href' => 'pop-catalog/evergreen',
+        '#localized_options' => ['query' => ['field_event_type_tid' => $campaign->tid]],
+        // Need this to render child items
+        '#original_link' => ['depth' => 1],
+        '#attributes' => [
+          'class' => []
+        ],
+        '#below' => []
+      ];
+
+      if ($params['field_event_type_tid'] == $campaign->tid) {
+        $menu_item['#attributes']['class'][] = 'open';
+      }
+
+      foreach($assets as $asset) {
+        // Count evergreen assets and only show menu items for ones that have items.
+        $count = _count_product('evergreen', $campaign->tid, $asset->tid);
+        if ($count > 0) {
+          $asset_menu_item = [
+            '#theme' => 'menu_link',
+            '#title' => $asset->name,
+            '#href' => 'pop-catalog/evergreen',
+            '#localized_options' => ['query' => ['field_event_type_tid' => $campaign->tid, 'field_product_type_tid' => $asset->tid]],
+          ];
+          $menu_item['#below'][] = $asset_menu_item;
+        }
+      }
+
+      $evergreen_tree['wrapper']['children']['menu'][] = $menu_item;
+    }
+  }
+
+  $seasonal_tree = [
+    'item' => [
+      '#type' => 'html_tag',
+      '#tag' => 'div',
+      '#attributes' => [
+        'id' => 'seasonal',
+        'class' => ['menu-title'],
+        'parent-menu' => '#pop-menu',
+        'data-toggle' => 'collapse',
+        'data-target' => '#collapseSeasonal',
+        'aria-controls' => 'collapseSeasonal',
+        'aria-expanded' => 'true',
+        'role' => 'button',
+      ],
+      '#value' => "<a href='/pop-catalog/campaign'><span>Seasonal</span><span class='caret'></span></a>",
+    ],
+    'wrapper' => [
+      '#type' => 'container',
+      '#attributes' => [
+        'id' => 'collapseSeasonal',
+        'class' => ['menu-wrapper', 'collapse'],
+        'aria-expanded' => 'true',
+      ],
+      'children' => [
+        'menu' => ['#theme_wrappers' => ['menu_tree']]
+      ]
+    ]
+  ];
+
+  if ($currentPath == 'pop-catalog/campaign' || $currentPath == 'pop-catalog' || $currentPath == 'pop') {
+    $seasonal_tree['wrapper']['#attributes']['class'][] = 'in';
+    $seasonal_tree['wrapper']['#attributes']['aria-expanded']= 'true';
+    $seasonal_tree['item']['#attributes']['aria-expanded']= 'true';
+  } else {
+    $seasonal_tree['item']['#attributes']['class'][] = 'collapsed';
+  }
+
+  foreach($campaigns as $campaign) {
+    $count = _count_product('pop_item', $campaign->tid);
+    if ($count > 0) {
+      $menu_item = [
+        '#theme' => 'menu_link',
+        '#title' => $campaign->name,
+        '#href' => 'pop-catalog/campaign',
+        '#localized_options' => ['query' => ['field_event_type_tid' => $campaign->tid]],
+        // Need this to render child items
+        '#original_link' => ['depth' => 1],
+        '#attributes' => [
+          'class' => []
+        ],
+        '#below' => []
+      ];
+
+      if ($params['field_event_type_tid'] == $campaign->tid) {
+        $menu_item['#attributes']['class'][] = 'open';
+      }
+
+      foreach($assets as $asset) {
+        // Count evergreen assets and only show menu items for ones that have items.
+        $count = _count_product('pop_item', $campaign->tid, $asset->tid);
+        if ($count > 0) {
+          $asset_menu_item = [
+            '#theme' => 'menu_link',
+            '#title' => $asset->name,
+            '#href' => 'pop-catalog/campaign',
+            '#localized_options' => ['query' => ['field_event_type_tid' => $campaign->tid, 'field_product_type_tid' => $asset->tid]],
+          ];
+          $menu_item['#below'][] = $asset_menu_item;
+        }
+      }
+
+      $seasonal_tree['wrapper']['children']['menu'][] = $menu_item;
+    }
+  }
+
+  $panel['children'] = [$evergreen_tree, $seasonal_tree];
+
+  return drupal_render($panel);
+}
+
+/**
+ * Simple count to determine if there are products in bundle, campaign, asset.
+ */
+function _count_product($bundle, $campaign = null, $asset = null) {
+  // Use EntityFieldQuery to look for line items referencing this product and do
+  // not allow the delete to occur if one exists.
+  $query = new EntityFieldQuery();
+
+  $query->entityCondition('entity_type', 'commerce_product')
+    ->entityCondition('bundle', $bundle)
+    ->propertyCondition('status', 1);
+
+  $date = format_date(time(), "custom", "Y-m-d H:i:s", "UTC");
+
+  if ($bundle == 'pop_item') {
+    $query->fieldCondition('field_available_until', 'value', $date, '>');
+  }
+
+  if ($campaign) {
+    $query->fieldCondition('field_event_type', 'tid', $campaign, '=');
+  }
+
+  if ($asset) {
+    $query->fieldCondition('field_product_type', 'tid', $asset, '=');
+  }
+
+  $count = $query->count()->execute();
+
+  return intval($count);
+}

@@ -1,0 +1,58 @@
+name = Stihl
+description = Classic subtheme of the LESS Bootstrap framework.
+core = 7.x
+base theme = bootstrap
+
+
+;;;;;;;;;;;;;;;;;;;;;
+;; Regions
+;;;;;;;;;;;;;;;;;;;;;
+
+regions[search]         = 'Search'
+regions[highlighted]    = 'Highlighted'
+regions[help]           = 'Help'
+regions[content]        = 'Content'
+regions[primary_nav]    = 'Primary Navigation'
+regions[sidebar_first]  = 'Primary'
+regions[sidebar_second] = 'Secondary'
+regions[cart_popout]    = 'Cart Popout'
+regions[footer]         = 'Footer'
+regions[page_top]       = 'Page top'
+regions[page_bottom]    = 'Page bottom'
+
+
+;;;;;;;;;;;;;;;;;;;;;
+;; Stylesheets
+;;;;;;;;;;;;;;;;;;;;;
+
+stylesheets[all][] = css/style.css
+
+;;;;;;;;;;;;;;;;;;;;;
+;; Scripts
+;;;;;;;;;;;;;;;;;;;;;
+
+scripts[] = '../../../libraries/bootstrap/js/affix.js'
+scripts[] = '../../../libraries/bootstrap/js/alert.js'
+scripts[] = '../../../libraries/bootstrap/js/button.js'
+scripts[] = '../../../libraries/bootstrap/js/carousel.js'
+scripts[] = '../../../libraries/bootstrap/js/collapse.js'
+scripts[] = '../../../libraries/bootstrap/js/dropdown.js'
+scripts[] = '../../../libraries/bootstrap/js/modal.js'
+scripts[] = '../../../libraries/bootstrap/js/tooltip.js'
+scripts[] = '../../../libraries/bootstrap/js/popover.js'
+scripts[] = '../../../libraries/bootstrap/js/scrollspy.js'
+scripts[] = '../../../libraries/bootstrap/js/tab.js'
+scripts[] = '../../../libraries/bootstrap/js/transition.js'
+scripts[] = '../../../libraries/modernizr/modernizr.js'
+scripts[] = 'js/stihl.js'
+
+; Disable BootstrapCDN so the compiled LESS source files can be used.
+settings[bootstrap_cdn] = ''
+
+;;;;;;;;;;;;;;;;;;;;;
+;; Settings
+;;;;;;;;;;;;;;;;;;;;;
+
+settings[logo_bgcolor] = ''
+settings[navbar_bgcolor] = ''
+settings[links_color] = ''

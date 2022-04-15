@@ -1,0 +1,25 @@
+# Drush Make stub file for the Classic distribution.
+core: '7.x'
+api: 2
+
+# Project core.
+projects:
+  drupal:
+    type: 'core'
+    version: '7.65'
+    patch:
+      # Patch default.settings.php to support MySQL over SSL connections.
+      # http://drupal.org/node/1824946.
+      - 'http://drupal.org/files/D7-ssl3.patch'
+
+  # Project profiles.
+  classic:
+    type: 'profile'
+    download:
+      url: 'ssh://git@stash.cgraphics.com:7999/cg/classic_distro.git'
+      tag: '7.x-1.103'
+  guardr:
+    type: 'profile'
+    download:
+      url: 'http://git.drupal.org/project/guardr.git'
+      tag: '7.x-2.49'

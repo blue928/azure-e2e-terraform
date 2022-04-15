@@ -1,0 +1,192 @@
+# Drush Make file for the Classic Drupal distribution
+core: '7.x'
+api: 2
+
+# Project defaults.
+defaults:
+  projects:
+    subdir: 'contrib'
+
+# Contrib projects.
+projects:
+  addanother: '2.2'
+  addressfield: '1.3'
+  admin_views: '1.6'
+  advanced_help: '1.5'
+  advuser: '3.0-beta1'
+  authcache: '2.0'
+  auto_entitylabel: '1.4'
+  calendar: '3.5'
+  cck: '3.0-alpha3'
+  commerce: '1.13'
+  commerce_fedex: '1.x-dev'
+  commerce_shipping: '2.2'
+  commerce_physical: '1.x-dev'
+  commerce_stripe: '1.2'
+  complete_profile: '1.0-rc1'
+  computed_field: '1.1'
+  content_taxonomy: '1.0-rc1'
+  context: '3.10'
+  ctools:
+    version: '1.12'
+  data: '1.0-alpha8'
+  date: '2.10'
+  deploy_info: '1.3'
+  email: '1.3'
+  email_noreply: '1.0'
+  entity: '1.9'
+  entitycache: '1.5'
+  entityreference: '1.5'
+  environment_indicator: '2.9'
+  features: '2.10'
+  field_collection: '1.0-beta11'
+  field_group:
+    version: '1.5'
+    patch:
+      - 'https://www.drupal.org/files/issues/php7_uniform_variable-2649648-5.patch'
+  file_entity: '2.0-beta3'
+  filter_perms: '1.0'
+  globalredirect: '1.5'
+  google_analytics: '2.5'
+  hidden_captcha: '1.2'
+  hotfolder:
+    version: '1.11'
+    patch:
+      - 'https://www.drupal.org/files/issues/2018-10-12/hotfolder_consider-watch-config-status-3003535-2-7.x.patch'
+  http_proxy: '1.0'
+  insert: '1.4'
+  insert_view: '2.0'
+  job_scheduler: '2.0'
+  jammer: '1.5'
+  jquery_update: '3.0-alpha5'
+  inactive_user:
+    download:
+      branch: '7.x-1.x'
+      revision: '5e4dc4f1721b06cfd607cb52002cc77d9c51c616'
+  ldap:
+    version: '2.4'
+  mail_logger:
+    download:
+      branch: '7.x-1.x'
+      revision: '7abb379743fa0a5716d562978a23ad27ba5a9666'
+  markdown: '1.5'
+  masquerade: '1.0-rc7'
+  metatags_quick: '2.9'
+  migrate: '2.8'
+  migrate_extras: '2.5'
+  menu_block: '2.7'
+  module_filter: '2.1'
+  navbar: '1.7'
+  node_clone: '1.0'
+  pathauto: '1.3'
+  permission_grid: '1.3'
+  profile2: '1.3'
+  physical: '1.x-dev'
+  reroute_email: '1.3'
+  rules: '2.10'
+  stringoverrides: '1.8'
+  strongarm: '2.0'
+  taxonomy_menu: '1.5'
+  term_reference_tree: '1.11'
+  ultimate_cron:
+    download:
+      branch: '7.x-2.x'
+      revision: 'ad84ea39ef6341254d30a72489373bb4f67c51ab'
+  unique_field: '1.0-rc1'
+  uuid: '1.2'
+  uuid_features: '1.0-rc1'
+  views:
+    version: '3.21'
+    patch:
+      - 'https://www.drupal.org/files/issues/1776332-views_handler_filter_data_empty_not_empty_0.patch'
+  views_data_export: '3.2'
+  views_flipped_table: '1.1'
+  views_php: '1.0-alpha3'
+  webform: '4.12'
+  weight: '2.5'
+  workflow: '2.8'
+  xautoload: '4.5'
+  x_originating_ip: '1.2'
+
+  # Custom projects.
+  classic_core:
+    type: 'module'
+    subdir: 'custom'
+    download:
+      url: 'ssh://git@stash.cgraphics.com:7999/cg/classic_core.git'
+      branch: '7.x-1.x'
+  fusionpro:
+    type: 'module'
+    subdir: 'custom'
+    download:
+      url: 'ssh://git@stash.cgraphics.com:7999/cg/fusionpro_module.git'
+      branch: '7.x-1.x'
+  promail:
+    type: 'module'
+    subdir: 'custom'
+    download:
+      url: 'ssh://git@stash.cgraphics.com:7999/cg/promail_module.git'
+      branch: '7.x-1.x'
+
+  # Project themes.
+  bootstrap:
+    type: 'theme'
+    version: '3.22'
+    subdir: 'contrib'
+  boron:
+    type: 'theme'
+    version: '1.4'
+    subdir: 'contrib'
+  classic_bootstrap:
+    type: 'theme'
+    subdir: 'custom'
+    download:
+      url: 'ssh://git@stash.cgraphics.com:7999/cg/classic_bootstrap.git'
+      branch: '7.x-1.x'
+  muggsy:
+    type: 'theme'
+    subdir: 'custom'
+    download:
+      url: 'ssh://git@stash.cgraphics.com:7999/cg/muggsy.git'
+      tag: '7.x-1.3'
+
+# Project libraries.
+libraries:
+  bootstrap:
+    type: library
+    download:
+      type: git
+      url: 'https://github.com/twbs/bootstrap.git'
+      branch: 'master'
+      revision: '806490499a9c204071cae322cfbc6a47caed8c02'
+  profiler:
+    type: library
+    download:
+      type: git
+      url: 'https://git.drupal.org/project/profiler.git'
+      tag: '7.x-2.0-beta1'
+  stripe:
+    type: library
+    download:
+      type: git
+      url: 'https://github.com/stripe/stripe-php.git'
+      tag: 'v1.18.0'
+  backbone:
+    type: library
+    download:
+      url:  'https://raw.githubusercontent.com/jashkenas/backbone/1.1.2/backbone-min.js'
+      type: 'file'
+  modernizr:
+    type: library
+    download:
+      url:  'https://raw.githubusercontent.com/Modernizr/Modernizr/v2.8.3/modernizr.js'
+      type: 'file'
+  underscore:
+    type: library
+    download:
+      url:  'https://raw.githubusercontent.com/jashkenas/underscore/1.6.0/underscore-min.js'
+      type: 'file'
+
+# Include Guardr contrib modules.
+includes:
+  - "http://cgit.drupalcode.org/guardr/tree/drupal-org.make?h=7.x-2.49"

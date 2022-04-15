@@ -1,0 +1,11 @@
+; $Id$
+name = Fusion Pro Template
+description = Provides Fusion Pro template node configurations.
+package = Classic
+core = 7.x
+configure = admin/config/services/fp_template
+dependancies[] = token
+dependancies[] = fusion_pro
+files[] = fp_template.admin.inc
+files[] = fp_template.install
+files[] = fp_template.module

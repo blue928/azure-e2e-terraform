@@ -1,0 +1,314 @@
+<?php
+
+/**
+ * @file
+ * Defines functions of the Commerce Cart Multiple module.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function commerce_cart_multiple_menu() {
+  $items = array();
+
+  $items['user/%user/carts/new'] = array(
+    'title' => 'Create a New Cart',
+    'description' => 'Create a new cart.',
+    'page callback' => 'commerce_cart_multiple_cart_new',
+    'page arguments' => array(1),
+    'access arguments' => array('administer carts'),
+    'type' => MENU_LOCAL_ACTION,
+    'context' => MENU_CONTEXT_PAGE,
+  );
+
+  $items['user/%user/carts/%commerce_order'] = array(
+    'title callback' => 'commerce_cart_multiple_cart_title',
+    'title arguments' => array(3),
+    'page callback' => 'commerce_cart_multiple_cart_view',
+    'page arguments' => array(3),
+    'access callback' => 'commerce_cart_multiple_cart_access',
+    'access arguments' => array(3),
+  );
+
+  $items['user/%user/carts/%commerce_order/set'] = array(
+    'title' => 'Set as Active',
+    'page callback' => 'commerce_cart_multiple_cart_set',
+    'page arguments' => array(3),
+    'access callback' => 'commerce_cart_multiple_cart_access',
+    'access arguments' => array(3),
+    'type' => MENU_LOCAL_ACTION,
+    'weight' => -10,
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+  );
+
+  $items['user/%user/carts/%commerce_order/delete'] = array(
+    'title' => 'Delete',
+    'page callback' => 'commerce_cart_multiple_cart_delete_form_wrapper',
+    'page arguments' => array(3),
+    'access callback' => 'commerce_cart_multiple_delete_access',
+    'access arguments' => array(3),
+    'type' => MENU_LOCAL_ACTION,
+    'weight' => 100,
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+  );
+
+  return $items;
+}
+
+/**
+ * Menu item title callback: returns the number of an cart for its pages.
+ *
+ * @param object $order
+ *   The order object as loaded via the URL wildcard.
+ *
+ * @return string
+ *   A page title of the format "Cart ##".
+ */
+function commerce_cart_multiple_cart_title($order) {
+  return t('Cart @number', array('@number' => $order->order_number));
+}
+
+/**
+ * Menu item access callback: view access to the customer cart display.
+ *
+ * @param object $order
+ *   The order object as loaded via the menu item wildcard.
+ *
+ * @return bool
+ *   Indicating the user's access to view the page.
+ */
+function commerce_cart_multiple_cart_access($order) {
+  if (user_access('administer carts') && ($order->status == 'cart' || (strpos($order->status, 'checkout') !== FALSE))) {
+    global $user;
+    return ($user->uid == $order->uid);
+  }
+  return FALSE;
+}
+
+/**
+ * Menu item access callback: delete access to the customer cart display.
+ *
+ * @param object $order
+ *   The order object as loaded via the menu item wildcard.
+ *
+ * @return bool
+ *   Indicating the user's access to view the page.
+ */
+function commerce_cart_multiple_delete_access($order) {
+  if (user_access('delete own carts') && ($order->status == 'cart' || (strpos($order->status, 'checkout') !== FALSE))) {
+    global $user;
+    return ($user->uid == $order->uid);
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function commerce_cart_multiple_permission() {
+  return array(
+    'administer carts' => array(
+      'title' => t('Administer carts'),
+      'description' => t('Choose between shopping carts, depends on view access for orders.'),
+    ),
+    'delete own carts' => array(
+      'title' => t('Delete own carts'),
+      'description' => t('Delete own shopping carts.  Applies if user does not have edit access for orders.'),
+    ),
+  );
+}
+
+/**
+ * Create new cart.
+ *
+ * @param int $account
+ *   For new orders, the customer's user account.
+ */
+function commerce_cart_multiple_cart_new($account = NULL) {
+  if (!empty($account)) {
+    $uid = $account->uid;
+  }
+  else {
+    global $user;
+    $uid = $user->uid;
+  }
+
+  // Check to see if there are already any empty carts.
+  $query = new EntityFieldQuery();
+
+  $query->entityCondition('entity_type', 'commerce_order')
+    ->entityCondition('bundle', 'commerce_order')
+    ->propertyCondition('status', 'cart')
+    ->propertyCondition('uid', $uid)
+    ->fieldCondition('commerce_order_total', 'amount', '0', '=')
+    ->range(0, 1);
+
+  $result = $query->execute();
+  // If so, then load the empty cart.
+  if ($result) {
+    $order_id = key($result['commerce_order']);
+    $order = commerce_order_load($order_id);
+    commerce_cart_multiple_cart_set($order);
+    // otherwise, create a new cart.
+  }
+  else {
+    $order = commerce_order_new($uid, 'cart');
+    commerce_order_save($order);
+    drupal_set_message(t("New cart created"));
+  }
+  drupal_goto('cart');
+}
+
+/**
+ * Generate an array for rendering the given cart.
+ *
+ * @param object $order
+ *   A fully loaded order object.
+ *
+ * @return array
+ *   Array as expected by drupal_render().
+ */
+function commerce_cart_multiple_cart_view($order, $view_mode = 'customer') {
+  drupal_add_css(drupal_get_path('module', 'commerce_order') . '/theme/commerce_order.theme.css');
+  return entity_view('commerce_order', array($order->order_id => $order), $view_mode, NULL, TRUE);
+}
+
+/**
+ * Load cart, "set as active".
+ *
+ * @param object $order
+ *   A fully loaded order object.
+ */
+function commerce_cart_multiple_cart_set($order) {
+  commerce_order_status_update($order, 'cart', TRUE);
+  commerce_order_save($order);
+  commerce_cart_order_ids_reset();
+  drupal_set_message(t("Cart Loaded"));
+  drupal_goto('cart');
+}
+
+/**
+ * Implements hook_forms().
+ */
+function commerce_cart_multiple_forms($form_id, $args) {
+  $forms = array();
+
+  // Define a wrapper ID for the cart delete confirmation form.
+  $forms['commerce_cart_multiple_cart_delete_form'] = array(
+    'callback' => 'commerce_order_order_delete_form',
+  );
+
+  return $forms;
+}
+
+/**
+ * Form callback wrapper: confirmation form for deleting an order.
+ *
+ * @param object $order
+ *   The order object to delete through the form.
+ */
+function commerce_cart_multiple_cart_delete_form_wrapper($order) {
+  // Include the forms file from the Order module.
+  module_load_include('inc', 'commerce_order', 'includes/commerce_order.forms');
+  return drupal_get_form('commerce_cart_multiple_cart_delete_form', $order);
+}
+
+/**
+ * Implements hook_menu_local_tasks_alter().
+ */
+function commerce_cart_multiple_form_commerce_cart_multiple_cart_delete_form_alter(&$form, &$form_state, $form_id) {
+  $form['description']['#markup'] = '<p>' . t('Deleting this cart cannot be undone.') . '</p>';
+  $form['#submit'][0] = 'commerce_cart_multiple_form_commerce_cart_multiple_cart_delete_form_submit';
+  $question = t('Are you sure you want to delete cart @number?', array('@number' => $form_state['build_info']['args'][0]->order_number));
+  drupal_set_title($question, PASS_THROUGH);
+}
+
+/**
+ * Redirect to user cart page.
+ */
+function commerce_cart_multiple_form_commerce_cart_multiple_cart_delete_form_submit($form, &$form_state) {
+  global $user;
+  $order = $form_state['order'];
+
+  if (commerce_order_delete($order->order_id)) {
+    drupal_set_message(t('Cart @number has been deleted.', array('@number' => $order->order_number)));
+    watchdog('commerce_order', 'Deleted cart @number.', array('@number' => $order->order_number), WATCHDOG_NOTICE);
+  }
+  else {
+    drupal_set_message(t('Cart @number could not be deleted.', array('@number' => $order->order_number)), 'error');
+  }
+  drupal_goto('user/' . $user->uid . '/carts');
+}
+
+/**
+ * Implements hook_menu_local_tasks_alter().
+ */
+function commerce_cart_multiple_menu_local_tasks_alter(&$data, $router_item, $root_path) {
+  // Add an action link to checkout.
+  if ($root_path == 'user/%/carts/%') {
+    // Extract the order ID from the current router item
+    // update menu item.
+    $order_id = $router_item['original_map'][3];
+    $item = menu_get_item('checkout/' . $order_id);
+    $order = commerce_order_load($order_id);
+    $wrapper = entity_metadata_wrapper('commerce_order', $order);
+    $total = $wrapper->commerce_order_total->amount->value();
+    if ($total) {
+      if ($item['access']) {
+        // Override the title.
+        $item['title'] = t('Checkout');
+        $data['actions']['output'][] = array(
+          '#theme' => 'menu_local_action',
+          '#link' => $item,
+        );
+      }
+    }
+  }
+
+  // Add an action link to manage carts.
+  if ($root_path == 'cart') {
+    // Extract the order ID from the current router item
+    // update menu item.
+    global $user;
+    $item = menu_get_item('user/' . $user->uid . '/carts');
+
+    if ($item['access']) {
+      // Override the title.
+      $item['title'] = t('Manage Additional Carts');
+      $data['actions']['output'][] = array(
+        '#theme' => 'menu_local_action',
+        '#link' => $item,
+      );
+    }
+  }
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function commerce_cart_multiple_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'commerce_cart_multiple') . '/includes/views/',
+  );
+}
+
+/**
+ * Implements hook_commerce_cart_order_id().
+ */
+function commerce_cart_multiple_commerce_cart_order_id($uid) {
+
+  // Only if $uid is provided.
+  if ($uid) {
+    // Create an array of valid shopping cart order statuses,
+    // including carts that are in checkout.
+    $status_ids = array_keys(commerce_order_statuses(array('state' => 'cart')));
+    $status_ids = array_merge($status_ids, array_keys(commerce_order_statuses(array('state' => 'checkout'))));
+    // Get the latest, based on changed timestamp.
+    $order_id = db_query('SELECT order_id FROM {commerce_order} WHERE uid = :uid AND status IN (:status_ids) ORDER BY changed DESC', array(':uid' => $uid, ':status_ids' => $status_ids))->fetchField();
+
+    return intval($order_id);
+  }
+}

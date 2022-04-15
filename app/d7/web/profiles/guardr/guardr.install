@@ -1,0 +1,144 @@
+<?php
+
+/**
+ * @file
+ * Default configuration of contributed modules.
+ *
+ * Here we do any database related configuration for included modules.
+ * These points of configuration includes both custom db queries and
+ * variable_set(). The only variable's that should be done in here are
+ * ones that require an array of data to be set. Variables that have a
+ * single entry (not an array) should be set in guardr.info under the
+ * settings section.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function guardr_install() {
+
+  // Set password_policy module defaults.
+  $policy = array(
+    'complexity' => 3,
+    'delay' => 24,
+    'digit_placement' => 2,
+    'history' => 24,
+    'length' => 8,
+    'letter' => 2,
+    'username' => 1,
+  );
+
+  $pid = db_insert('password_policy')
+  ->fields(array(
+    'name' => 'Guardr default',
+    'description' => 'The default password policy implementation included with the Guardr distribution.',
+    'constraints' => serialize($policy),
+    'enabled' => 1,
+    'expiration' => '90',
+    'warning' => '7,14',
+    'created' => REQUEST_TIME,
+  ))
+  ->execute();
+
+  // Enable authenticated role the above for the default password policy.
+  db_insert('password_policy_role')
+    ->fields(array(
+      'pid' => $pid,
+      'rid' => 2,
+  ))
+  ->execute();
+
+  $admin_role = new stdClass();
+  $admin_role->name = 'administrator';
+  user_role_save($admin_role);
+
+  $admin_role = user_role_load_by_name('administrator');
+  variable_set('user_admin_role', $admin_role->rid);
+
+  db_insert('users_roles')
+    ->fields(array(
+      'uid' => 1,
+      'rid' => $admin_role->rid,
+  ))
+  ->execute();
+
+  $administrators = array(
+    'punctuation' => 3,
+    'digit' => 2,
+    'history' => 48,
+    'length' => 12,
+    'letter' => 2,
+    'username' => 1,
+  );
+  $pid = db_insert('password_policy')
+  ->fields(array(
+    'name' => 'Guardr administrator',
+    'description' => 'A tougher password policy for administrator roles.',
+    'constraints' => serialize($administrators),
+    'enabled' => 1,
+    'expiration' => '60',
+    'warning' => '7,14',
+    'created' => REQUEST_TIME,
+  ))
+  ->execute();
+
+  db_insert('password_policy_role')
+    ->fields(array(
+      'pid' => $pid,
+      'rid' => $admin_role->rid,
+  ))
+  ->execute();
+
+  $passphrase = array(
+    'length' => 20,
+    'username' => 1,
+  );
+
+  $pid = db_insert('password_policy')
+  ->fields(array(
+    'name' => 'Guardr passphrase',
+    'description' => 'An alternate Guardr password policy with fewer complexity restrictions, but a longer character length.',
+    'constraints' => serialize($passphrase),
+    'enabled' => 0,
+    'created' => REQUEST_TIME,
+  ))
+  ->execute();
+
+  db_insert('password_policy_role')
+    ->fields(array(
+      'pid' => $pid,
+      'rid' => 2,
+  ))
+   ->execute();
+
+  // Set autologout module defaults.
+  // PCI v3.0 SAQ D 8.1.8 specifies a 15 minute timeout.
+  variable_set('autologout_timeout', 900);
+  variable_set('autologout_use_watchdog', 1);
+  variable_set('autologout_inactivity_message', 'You have been automatically logged out due to 15 minutes of inactivity.');
+
+  $revision_all = array(
+    'revision_all_types' => 1,
+    'prevent_type_override' => 1,
+    'prevent_node_override' => 1,
+    'enable_future' => 1,
+  );
+  variable_set('revision_all', $revision_all);
+
+  // PCI v3.0 does not permit shared accounts, so set new sessions to
+  // automatically logout other sessions.
+  variable_set('session_limit_max', 1);
+  variable_set('session_limit_behaviour', 1);
+
+  // PCI does not specify to block logins based on IP.
+  // Setting an IP block could even DoS users sharing a NAT or corporate proxy.
+  variable_set('user_failed_login_ip_window', 0);
+  // PCI v3.0 SAQ D 8.1.6 limits failures to 6 attempts.
+  variable_set('user_failed_login_user_limit', 6);
+  // PCI v3.0 SAQ D 8.1.2 says lockouts should list 30 minutes,
+  // but doesn't specify the window in which to count attempt failures.
+  variable_set('user_failed_login_user_window', 1800);
+
+  $permission_watchdog = array('all' => 'all');
+  variable_set('permission_watchdog_roles', $permission_watchdog);
+}

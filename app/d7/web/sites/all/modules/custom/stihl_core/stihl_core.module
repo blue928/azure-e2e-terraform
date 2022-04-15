@@ -1,0 +1,296 @@
+<?php
+
+/**
+ * @file
+ * Contains utility functions use in the Stihl application.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function stihl_core_menu() {
+  // Register a callback for the front page.
+  $items['frontpage'] = array(
+    'page callback' => 'stihl_core_frontpage',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+    'title' => 'Log in',
+  );
+  $items['admin/config/stihl'] = array(
+    'title' => 'Stihl',
+    'description' => 'Stihl tools.',
+    'position' => 'right',
+    'weight' => -50,
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('administer site configuration'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  );
+  return $items;
+}
+
+/**
+ * Generates the front page.
+ */
+function stihl_core_frontpage() {
+  // Show anonymous users a log in form on front page.
+  if (user_is_anonymous()) {
+
+    // Define login form. render() expects a reference.
+    $login_form_block = drupal_get_form('user_login_block');
+
+    $render = array(
+      '#prefix' => '<div class="jumbotron"><div class="container">',
+      '#suffix' => '</div></div>',
+      '#markup' => render($login_form_block),
+    );
+    return $render;
+  }
+  // @TODO update destination when page is created.
+  // If the user is logged-in, the frontpage is populated with the Annoucements
+  // feature, and the message is set in a client-editable block. So we don't
+  // need to set anything here.
+  $render = '';
+  return $render;
+}
+
+/**
+ * Implements hook_preprocess_page().
+ */
+function stihl_core_preprocess_page(&$variables) {
+  // Set front page log in title.
+  if ($variables['is_front'] && !$variables['logged_in']) {
+    $variables['title'] = 'Log in';
+  }
+}
+
+/**
+ * Return select list options of U.S. states.
+ *
+ * @return array
+ *   An array of states options for a select list.
+ */
+function stihl_core_states_list_array() {
+  return array(
+    'AL' => 'Alabama',
+    'AK' => 'Alaska',
+    'AZ' => 'Arizona',
+    'AR' => 'Arkansas',
+    'CA' => 'California',
+    'CO' => 'Colorado',
+    'CT' => 'Connecticut',
+    'DE' => 'Delaware',
+    'DC' => 'District of Columbia',
+    'FL' => 'Florida',
+    'GA' => 'Georgia',
+    'HI' => 'Hawaii',
+    'ID' => 'Idaho',
+    'IL' => 'Illinois',
+    'IN' => 'Indiana',
+    'IA' => 'Iowa',
+    'KS' => 'Kansas',
+    'KY' => 'Kentucky',
+    'LA' => 'Louisiana',
+    'ME' => 'Maine',
+    'MD' => 'Maryland',
+    'MA' => 'Massachusetts',
+    'MI' => 'Michigan',
+    'MN' => 'Minnesota',
+    'MS' => 'Mississippi',
+    'MO' => 'Missouri',
+    'MT' => 'Montana',
+    'NE' => 'Nebraska',
+    'NV' => 'Nevada',
+    'NH' => 'New Hampshire',
+    'NJ' => 'New Jersey',
+    'NM' => 'New Mexico',
+    'NY' => 'New York',
+    'NC' => 'North Carolina',
+    'ND' => 'North Dakota',
+    'OH' => 'Ohio',
+    'OK' => 'Oklahoma',
+    'OR' => 'Oregon',
+    'PA' => 'Pennsylvania',
+    'RI' => 'Rhode Island',
+    'SC' => 'South Carolina',
+    'SD' => 'South Dakota',
+    'TN' => 'Tennessee',
+    'TX' => 'Texas',
+    'UT' => 'Utah',
+    'VT' => 'Vermont',
+    'VA' => 'Virginia',
+    'WA' => 'Washington',
+    'WV' => 'West Virginia',
+    'WI' => 'Wisconsin',
+    'WY' => 'Wyoming',
+  );
+}
+
+/**
+ * Returns the BD ID for a given user ID, or the logged-in user's ID.
+ *
+ * @param int $uid
+ *   The user ID whose BD ID we need.
+ *
+ * @return mixed
+ *   The BD ID of the given or logged-in user; FALSE if not found.
+ */
+function stihl_core_get_bd_id($uid = NULL) {
+  $uid = $uid ?: $GLOBALS['user']->uid;
+  $bd_id = db_query('SELECT field_bd_reference_target_id FROM {field_data_field_bd_reference} WHERE entity_id = :uid', array(':uid' => $uid))->fetchField();
+  return $bd_id;
+}
+
+/**
+ * Returns the name of a BD by the BD ID.
+ *
+ * @param int $bd_id
+ *   The unique ID of the BD whose name we seek.
+ *
+ * @return mixed
+ *   Returns the name of the BD or FALSE if not found.
+ */
+function stihl_core_get_bd_name($bd_id) {
+  $name = db_query('SELECT name FROM {stihl_profile} WHERE id = :bd_id', array(':bd_id' => $bd_id))->fetchField();
+  return $name;
+}
+
+/**
+ * Implements hook_token_info().
+ */
+function stihl_core_token_info() {
+  $info['types'] = array(
+    'stihl_core' => array(
+      'name' => t('Stihl Core'),
+      'description' => t('Utility tokens for the Stihl app.'),
+      'needs-data' => 'commerce_order',
+    ),
+  );
+  $info['tokens'] = array(
+    'stihl_core' => array(
+      'mail' => array(
+        'name' => t('BD Emails'),
+        'description' => t('Email addresses for all users associated with a BD.'),
+      ),
+      'bd-name' => array(
+        'name' => t('BD Name'),
+        'description' => t('The name of a given BD.'),
+      ),
+      'order-name' => array(
+        'name' => t('Order Name'),
+        'description' => t('The name/title of a given order.'),
+      ),
+      'order-description' => array(
+        'name' => t('Order Description'),
+        'description' => t('The description/notes of a given order.'),
+      ),
+      'order-rlci-response' => array(
+        'name' => t('RLCI Response'),
+        'description' => t('The response Red Letter gives for a given order.'),
+      ),
+    ),
+  );
+  return $info;
+}
+
+/**
+ * Implements hook_tokens().
+ */
+function stihl_core_tokens($type, $tokens, array $data = array(), array $options = array()) {
+  $replacements = array();
+  if ($type == 'stihl_core') {
+    $order_wrapper = entity_metadata_wrapper('commerce_order', $data['node']);
+    $uid = $data['node']->revision_uid;
+    foreach ($tokens as $name => $original) {
+      switch ($name) {
+        case 'mail':
+          $replacements[$original] = stihl_core_get_bd_user_addresses(stihl_core_get_bd_id($uid));
+          break;
+
+        case 'bd-name':
+          $replacements[$original] = stihl_core_get_bd_name(stihl_core_get_bd_id($uid));
+          break;
+
+        case 'order-name':
+          $replacements[$original] = $order_wrapper->field_order_title->value();
+          break;
+
+        case 'order-description':
+          $replacements[$original] = $order_wrapper->field_order_notes->value();
+          break;
+
+        case 'order-rlci-response':
+          $replacements[$original] = $order_wrapper->field_order_approval_comment->value();;
+          break;
+      }
+    }
+  }
+  return $replacements;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function stihl_core_form_alter(&$form, $form_state, $form_id) {
+  if ($form_id == 'search_block_form') {
+    $form['#submit'][] = 'stihl_core_commerce_product_search_submit';
+  }
+}
+
+/**
+ * Custom callback to redirect Drupal search to the Products Search API page.
+ */
+function stihl_core_commerce_product_search_submit($form, &$form_state) {
+  $search_string = trim($form_state['values']['search_block_form']);
+  $search_string = strtr($search_string, array("\\" => "\\\\", '/' => "\\"));
+  $form_state['rebuild'] = TRUE;
+
+  // Change where search goes based on context
+  $contexts = context_active_contexts();
+  if (array_key_exists('pop_layout', $contexts)) {
+    drupal_goto('pop-catalog', ['query' => ['combine' => $search_string]]);
+  } else {
+    drupal_goto('products/search/' . $search_string);
+  }
+}
+
+/**
+ * Implements hook_entity_info_alter().
+ *
+ * We are overriding Commerce's default URI callback for Products because we
+ * have granted our users "Read Any" access to our Products. As such, we need to
+ * present them with URLs to Product view pages in search results and links to
+ * Product edit pages to anyone with Update Any access.
+ */
+function stihl_core_entity_info_alter(&$entity_info) {
+  $entity_info['commerce_product']['uri callback'] = 'stihl_core_commerce_product_ui_product_uri';
+}
+
+/**
+ * Custom URI callback for Commerce Product entities.
+ */
+function stihl_core_commerce_product_ui_product_uri($product) {
+  // First look for a return value in the default entity uri callback.
+  $uri = commerce_product_uri($product);
+
+  // If a value was found, return it now.
+  if (!empty($uri)) {
+    return $uri;
+  }
+
+  // Otherwise return an admin URI if the user has permission.
+  if (commerce_product_access('update', $product)) {
+    return array(
+      'path' => 'admin/commerce/products/' . $product->product_id,
+    );
+  }
+
+  // Give a non-admin, read-only URL to users with view access to Products.
+  elseif (commerce_product_access('view', $product)) {
+    return array(
+      'path' => 'product/' . $product->product_id,
+    );
+  }
+
+  return NULL;
+}

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit
+  bootstrap="../../profiles/classic/libraries/phpunit/bootstrap.inc.php"
+  colors="true"
+  stopOnError="false"
+  stopOnFailure="false"
+  stopOnIncomplete="false"
+  stopOnSkipped="false">
+  <testsuites>
+    <testsuite name="Stihl Unit Test Suite">
+      <directory suffix="Test.php">modules/custom</directory>
+      <directory suffix="Test.php">modules/features</directory>
+    </testsuite>
+  </testsuites>
+  <filter>
+    <whitelist>
+      <!-- Include module files and extensions for custom modules -->
+      <directory suffix=".module">modules/custom</directory>
+      <directory suffix=".inc">modules/custom</directory>
+      <!-- Include module files and extensions for features -->
+      <directory suffix=".module">modules/features</directory>
+      <directory suffix=".inc">modules/features</directory>
+      <exclude>
+        <!-- Exclude the Tests themselves -->
+        <directory suffix="Test.php">modules</directory>
+        <!-- Exclude Views handler,etc files -->
+        <directory suffix=".inc">modules/features/*/views</directory>
+        <!-- Exclude Features generated files -->
+        <directory suffix=".context.inc">modules</directory>
+        <directory suffix=".features.inc">modules</directory>
+        <directory suffix=".features.field_base.inc">modules</directory>
+        <directory suffix=".features.field_instance.inc">modules</directory>
+        <directory suffix=".features.menu_custom.inc">modules</directory>
+        <directory suffix=".features.menu_links.inc">modules</directory>
+        <directory suffix=".features.taxonomy.inc">modules</directory>
+        <directory suffix=".features.user_permission.inc">modules</directory>
+        <directory suffix=".field_group.inc">modules</directory>
+        <directory suffix=".rules_defaults.inc">modules</directory>
+        <directory suffix=".strongarm.inc">modules</directory>
+        <directory suffix=".views.inc">modules</directory>
+        <directory suffix=".views_default.inc">modules</directory>
+        <!-- Exclude specific module files that are effectively empty -->
+        <!-- <directory suffix=".module">sites/all/module_name</directory> -->
+        <!-- Exclude Migrate classes -->
+        <directory suffix=".inc">modules/*/*/migrate</directory>
+        <directory suffix=".migrate.inc">modules</directory>
+      </exclude>
+    </whitelist>
+  </filter>
+</phpunit>

@@ -1,0 +1,156 @@
+<?php
+
+/**
+ * @file
+ * Contains FP Template config entity functions.
+ */
+
+// Define administrative uri locations.
+define('FP_TEMPLATE_CONFIGS_MANAGE_URI', 'admin/config/services/fp-templates');
+define('FP_TEMPLATE_CONFIGS_VIEW_URI', 'admin/content/fp-templates');
+
+/**
+ * Implements hook_entity_info().
+ */
+function fp_template_configs_entity_info() {
+
+  $info['fp_template_configs'] = array(
+    'label' => t('FusionPro Template Configuration'),
+    'base table' => 'fp_template_config',
+    'entity keys' => array(
+      'id' => 'id',
+      'label' => 'name',
+    ),
+
+    'entity class' => 'FPTemplateConfigsEntity',
+    'controller class' => 'FPTemplateConfigsController',
+
+    'load hook' => 'fp_template_configs_load',
+    'uri callback' => 'entity_class_uri',
+
+    'admin ui' => array(
+      'path' => FP_TEMPLATE_CONFIGS_MANAGE_URI,
+      'controller class' => 'FPTemplateConfigsUIController',
+      'menu wildcard' => '%fp_template_configs',
+      'file' => 'fp_template_configs.admin.inc',
+    ),
+
+    'exportable' => TRUE,
+    'module' => 'fp_template_configs',
+    'access callback' => 'fp_template_configs_access_callback',
+
+    'views controller class' => 'EntityDefaultViewsController',
+  );
+
+  return $info;
+}
+
+/**
+ * Implements hook_menu().
+ */
+function fp_template_configs_menu() {
+
+  $items['admin/content/fp-templates/%'] = array(
+    'title' => 'FusionPro Template Configuration',
+    'page callback' => 'fp_template_configs_view_entity',
+    'page arguments' => array(3),
+    'access callback' => 'fp_template_configs_access_callback',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function fp_template_configs_permission() {
+  return array(
+    'administer FusionPro template configs' => array(
+      'title' => t('administer FusionPro template configurations'),
+      'description' => t('Administer FusionPro template configurations.'),
+    ),
+  );
+}
+
+/**
+ * Access callback for FusionPro Template Configuration entities.
+ *
+ * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+ */
+function fp_template_configs_access_callback() {
+  return user_access('administer site configuration') || user_access('administer FusionPro template configs');
+}
+
+/**
+ * Entity display page.
+ *
+ * @param int $id
+ *   The id of the entity.
+ *
+ * @return array
+ *   Render array.
+ */
+function fp_template_configs_view_entity($id) {
+  return entity_view('fp_template_configs', array(fp_template_configs_load($id)));
+}
+
+/**
+ * Auto loader for template config entities by name.
+ *
+ * @param string $name
+ *   The human readable name of the entity.
+ * @param bool $reset
+ *   Whether to reset cache.
+ *
+ * @return object
+ *   Single entity object.
+ */
+function fp_template_configs_load_by_name($name, $reset = FALSE) {
+  $id = '';
+  $query = 'SELECT id FROM {fp_template_config} WHERE name = :name';
+  try {
+    $id = db_query($query, array(':name' => $name))->fetchField();
+  }
+  // Catch Exception thrown in the event that the db_query fails.
+  // This is possible if, for example, a template configuration
+  // has yet to be defined.
+  catch (\PDOException $e) {
+    $message = 'Caught exception: @exception. Template Config Name: @name is invalid.';
+    $replacements = array('@exception' => $e->getMessage(), '@name' => $name);
+    watchdog('fp_template_configs', $message, $replacements, WATCHDOG_ERROR);
+  }
+  return fp_template_configs_load($id, $reset);
+}
+
+/**
+ * Auto loader for template config entities.
+ *
+ * @param int $id
+ *   The id of the entity.
+ * @param bool $reset
+ *   Whether to reset cache.
+ *
+ * @return object
+ *   Single entity object.
+ */
+function fp_template_configs_load($id, $reset = FALSE) {
+  $entities = fp_template_configs_load_multiple(array($id), array(), $reset);
+  return reset($entities);
+}
+
+/**
+ * Load multiple entities with optional conditions.
+ *
+ * @param array $entity_ids
+ *   An array of entity ids.
+ * @param array $conditions
+ *   An array of conditions to filter query.
+ * @param bool $reset
+ *   Whether to reset cache.
+ *
+ * @return array
+ *   An array of entity objects.
+ */
+function fp_template_configs_load_multiple(array $entity_ids = array(), array $conditions = array(), $reset = FALSE) {
+  return entity_load('fp_template_configs', $entity_ids, $conditions, $reset);
+}

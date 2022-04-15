@@ -1,0 +1,687 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the Classic distribution.
+ */
+
+/**
+ * Implements hook_install().
+ *
+ * Perform actions to set up the site for this profile.
+ */
+function classic_install() {
+  // Execute the base setup tasks.
+  !function_exists('guardr_install') ? require_once 'profiles/guardr/guardr.install' : FALSE;
+  call_user_func('guardr_install');
+
+  // Add text formats.
+  $filtered_html_format = array(
+    'format' => 'filtered_html',
+    'name' => 'Filtered HTML',
+    'weight' => 0,
+    'filters' => array(
+      // URL filter.
+      'filter_url' => array(
+        'weight' => 0,
+        'status' => 1,
+      ),
+      // HTML filter.
+      'filter_html' => array(
+        'weight' => 1,
+        'status' => 1,
+      ),
+      // Line break filter.
+      'filter_autop' => array(
+        'weight' => 2,
+        'status' => 1,
+      ),
+      // HTML corrector filter.
+      'filter_htmlcorrector' => array(
+        'weight' => 10,
+        'status' => 1,
+      ),
+    ),
+  );
+  $filtered_html_format = (object) $filtered_html_format;
+  filter_format_save($filtered_html_format);
+
+  $full_html_format = array(
+    'format' => 'full_html',
+    'name' => 'Full HTML',
+    'weight' => 1,
+    'filters' => array(
+      // URL filter.
+      'filter_url' => array(
+        'weight' => 0,
+        'status' => 1,
+      ),
+      // Line break filter.
+      'filter_autop' => array(
+        'weight' => 1,
+        'status' => 1,
+      ),
+      // HTML corrector filter.
+      'filter_htmlcorrector' => array(
+        'weight' => 10,
+        'status' => 1,
+      ),
+    ),
+  );
+  $full_html_format = (object) $full_html_format;
+  filter_format_save($full_html_format);
+
+  // Enable some standard blocks.
+  $default_theme = variable_get('theme_default', 'bartik');
+  $admin_theme = 'seven';
+  $blocks = array(
+    array(
+      'module' => 'system',
+      'delta' => 'main',
+      'theme' => $default_theme,
+      'status' => 1,
+      'weight' => 0,
+      'region' => 'content',
+      'pages' => '',
+      'cache' => -1,
+    ),
+    array(
+      'module' => 'search',
+      'delta' => 'form',
+      'theme' => $default_theme,
+      'status' => 1,
+      'weight' => -1,
+      'region' => 'sidebar_first',
+      'pages' => '',
+      'cache' => -1,
+    ),
+    array(
+      'module' => 'node',
+      'delta' => 'recent',
+      'theme' => $admin_theme,
+      'status' => 1,
+      'weight' => 10,
+      'region' => 'dashboard_main',
+      'pages' => '',
+      'cache' => -1,
+    ),
+    array(
+      'module' => 'user',
+      'delta' => 'login',
+      'theme' => $default_theme,
+      'status' => 1,
+      'weight' => 0,
+      'region' => 'sidebar_first',
+      'pages' => '',
+      'cache' => -1,
+    ),
+    array(
+      'module' => 'system',
+      'delta' => 'navigation',
+      'theme' => $default_theme,
+      'status' => 1,
+      'weight' => 0,
+      'region' => 'sidebar_first',
+      'pages' => '',
+      'cache' => -1,
+    ),
+    array(
+      'module' => 'system',
+      'delta' => 'powered-by',
+      'theme' => $default_theme,
+      'status' => 1,
+      'weight' => 10,
+      'region' => 'footer',
+      'pages' => '',
+      'cache' => -1,
+    ),
+    array(
+      'module' => 'system',
+      'delta' => 'help',
+      'theme' => $default_theme,
+      'status' => 1,
+      'weight' => 0,
+      'region' => 'help',
+      'pages' => '',
+      'cache' => -1,
+    ),
+    array(
+      'module' => 'system',
+      'delta' => 'main',
+      'theme' => $admin_theme,
+      'status' => 1,
+      'weight' => 0,
+      'region' => 'content',
+      'pages' => '',
+      'cache' => -1,
+    ),
+    array(
+      'module' => 'system',
+      'delta' => 'help',
+      'theme' => $admin_theme,
+      'status' => 1,
+      'weight' => 0,
+      'region' => 'help',
+      'pages' => '',
+      'cache' => -1,
+    ),
+    array(
+      'module' => 'user',
+      'delta' => 'login',
+      'theme' => $admin_theme,
+      'status' => 1,
+      'weight' => 10,
+      'region' => 'content',
+      'pages' => '',
+      'cache' => -1,
+    ),
+    array(
+      'module' => 'user',
+      'delta' => 'new',
+      'theme' => $admin_theme,
+      'status' => 1,
+      'weight' => 0,
+      'region' => 'dashboard_sidebar',
+      'pages' => '',
+      'cache' => -1,
+    ),
+    array(
+      'module' => 'search',
+      'delta' => 'form',
+      'theme' => $admin_theme,
+      'status' => 1,
+      'weight' => -10,
+      'region' => 'dashboard_sidebar',
+      'pages' => '',
+      'cache' => -1,
+    ),
+  );
+  $query = db_insert('block')->fields(
+    array(
+      'module', 'delta', 'theme', 'status', 'weight', 'region', 'pages', 'cache',
+    )
+  );
+  foreach ($blocks as $block) {
+    $query->values($block);
+  }
+  $query->execute();
+
+  // Insert default pre-defined node types into the database. For a complete
+  // list of available node type attributes, refer to the node type API
+  // documentation at: http://api.drupal.org/api/HEAD/function/hook_node_info.
+  $types = array(
+    array(
+      'type' => 'page',
+      'name' => st('Basic page'),
+      'base' => 'node_content',
+      'description' => st("Use <em>basic pages</em> for your static content, such as an 'About us' page."),
+      'custom' => 1,
+      'modified' => 1,
+      'locked' => 0,
+    ),
+    array(
+      'type' => 'article',
+      'name' => st('Article'),
+      'base' => 'node_content',
+      'description' => st('Use <em>articles</em> for time-sensitive content like news, press releases or blog posts.'),
+      'custom' => 1,
+      'modified' => 1,
+      'locked' => 0,
+    ),
+  );
+
+  foreach ($types as $type) {
+    $type = node_type_set_defaults($type);
+    node_type_save($type);
+    node_add_body_field($type);
+  }
+
+  // Insert default pre-defined RDF mapping into the database.
+  $rdf_mappings = array(
+    array(
+      'type' => 'node',
+      'bundle' => 'page',
+      'mapping' => array(
+        'rdftype' => array('foaf:Document'),
+      ),
+    ),
+    array(
+      'type' => 'node',
+      'bundle' => 'article',
+      'mapping' => array(
+        'field_image' => array(
+          'predicates' => array('og:image', 'rdfs:seeAlso'),
+          'type' => 'rel',
+        ),
+        'field_tags' => array(
+          'predicates' => array('dc:subject'),
+          'type' => 'rel',
+        ),
+      ),
+    ),
+  );
+  foreach ($rdf_mappings as $rdf_mapping) {
+    rdf_mapping_save($rdf_mapping);
+  }
+
+  // Default "Basic page" to not be promoted
+  // and have comments disabled.
+  variable_set('node_options_page', array('status'));
+  variable_set('comment_page', COMMENT_NODE_HIDDEN);
+
+  // Don't display date and author information
+  // for "Basic page" nodes by default.
+  variable_set('node_submitted_page', FALSE);
+
+  // Enable user picture support and set the default
+  // to a square thumbnail option.
+  variable_set('user_pictures', '1');
+  variable_set('user_picture_dimensions', '1024x1024');
+  variable_set('user_picture_file_size', '800');
+  variable_set('user_picture_style', 'thumbnail');
+
+  // Allow visitor account creation with administrative approval.
+  variable_set('user_register', USER_REGISTER_VISITORS_ADMINISTRATIVE_APPROVAL);
+
+  // Create a default vocabulary named "Tags",
+  // enabled for the 'article' content type.
+  $description = st('Use tags to group articles on similar topics into categories.');
+  $help = st('Enter a comma-separated list of words to describe your content.');
+  $vocabulary = (object) array(
+    'name' => st('Tags'),
+    'description' => $description,
+    'machine_name' => 'tags',
+    'help' => $help,
+
+  );
+  taxonomy_vocabulary_save($vocabulary);
+
+  $field = array(
+    'field_name' => 'field_' . $vocabulary->machine_name,
+    'type' => 'taxonomy_term_reference',
+    // Set cardinality to unlimited for tagging.
+    'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+    'settings' => array(
+      'allowed_values' => array(
+        array(
+          'vocabulary' => $vocabulary->machine_name,
+          'parent' => 0,
+        ),
+      ),
+    ),
+  );
+  field_create_field($field);
+
+  $instance = array(
+    'field_name' => 'field_' . $vocabulary->machine_name,
+    'entity_type' => 'node',
+    'label' => 'Tags',
+    'bundle' => 'article',
+    'description' => $vocabulary->help,
+    'widget' => array(
+      'type' => 'taxonomy_autocomplete',
+      'weight' => -4,
+    ),
+    'display' => array(
+      'default' => array(
+        'type' => 'taxonomy_term_reference_link',
+        'weight' => 10,
+      ),
+      'teaser' => array(
+        'type' => 'taxonomy_term_reference_link',
+        'weight' => 10,
+      ),
+    ),
+  );
+  field_create_instance($instance);
+
+  // Create an image field named "Image",
+  // enabled for the 'article' content type.
+  // Many of the following values will be defaulted,
+  // they're included here as an illustrative examples.
+  // See http://api.drupal.org/api/function/field_create_field/7
+  $field = array(
+    'field_name' => 'field_image',
+    'type' => 'image',
+    'cardinality' => 1,
+    'locked' => FALSE,
+    'indexes' => array('fid' => array('fid')),
+    'settings' => array(
+      'uri_scheme' => 'public',
+      'default_image' => FALSE,
+    ),
+    'storage' => array(
+      'type' => 'field_sql_storage',
+      'settings' => array(),
+    ),
+  );
+  field_create_field($field);
+
+  // Many of the following values will be defaulted,
+  // they're included here as an illustrative examples.
+  // See http://api.drupal.org/api/function/field_create_instance/7
+  $instance = array(
+    'field_name' => 'field_image',
+    'entity_type' => 'node',
+    'label' => 'Image',
+    'bundle' => 'article',
+    'description' => st('Upload an image to go with this article.'),
+    'required' => FALSE,
+
+    'settings' => array(
+      'file_directory' => 'field/image',
+      'file_extensions' => 'png gif jpg jpeg',
+      'max_filesize' => '',
+      'max_resolution' => '',
+      'min_resolution' => '',
+      'alt_field' => TRUE,
+      'title_field' => '',
+    ),
+
+    'widget' => array(
+      'type' => 'image_image',
+      'settings' => array(
+        'progress_indicator' => 'throbber',
+        'preview_image_style' => 'thumbnail',
+      ),
+      'weight' => -1,
+    ),
+
+    'display' => array(
+      'default' => array(
+        'label' => 'hidden',
+        'type' => 'image',
+        'settings' => array('image_style' => 'large', 'image_link' => ''),
+        'weight' => -1,
+      ),
+      'teaser' => array(
+        'label' => 'hidden',
+        'type' => 'image',
+        'settings' => array('image_style' => 'medium', 'image_link' => 'content'),
+        'weight' => -1,
+      ),
+    ),
+  );
+  field_create_instance($instance);
+
+  // Enable default permissions for system roles.
+  $filtered_html_permission = filter_permission_name($filtered_html_format);
+  user_role_grant_permissions(DRUPAL_ANONYMOUS_RID,
+    array(
+      'access content', 'access comments', $filtered_html_permission,
+    )
+  );
+  user_role_grant_permissions(DRUPAL_AUTHENTICATED_RID,
+    array(
+      'access content', 'access comments', 'post comments', 'skip comment approval', $filtered_html_permission,
+    )
+  );
+
+  $item = array(
+    'link_title' => st('Home'),
+    'link_path' => '<front>',
+    'menu_name' => 'main-menu',
+  );
+  menu_link_save($item);
+
+  // Update the menu router information.
+  menu_rebuild();
+
+  // Enable the admin theme.
+  db_update('system')
+    ->fields(array('status' => 1))
+    ->condition('type', 'theme')
+    ->condition('name', 'seven')
+    ->execute();
+  variable_set('admin_theme', 'seven');
+  variable_set('node_admin_theme', '1');
+
+  // Do some pre-config so LDAP settings are already set when LDAP turns on.
+  $ldap_authentication_conf = array(
+    "sids" => array(
+      "CG" => "CG",
+    ),
+    "authenticationMode" => 1,
+    "loginUIUsernameTxt" => NULL,
+    "loginUIPasswordTxt" => NULL,
+    "ldapUserHelpLinkUrl" => NULL,
+    "ldapUserHelpLinkText" => "Logon Help",
+    "emailOption" => 3,
+    "emailUpdate" => 2,
+    "allowOnlyIfTextInDn" => array(),
+    "excludeIfTextInDn" => array(),
+    "allowTestPhp" => "",
+    "excludeIfNoAuthorizations" => NULL,
+    "ssoRemoteUserStripDomainName" => NULL,
+    "seamlessLogin" => NULL,
+    "ldapImplementation" => NULL,
+    "cookieExpire" => NULL,
+  );
+
+  variable_set('ldap_authentication_conf', $ldap_authentication_conf);
+
+  $ldap_user_conf = array(
+    'drupalAcctProvisionServer' => 'CG',
+    'userConflictResolve' => 2,
+    'acctCreation' => 4,
+    'manualAccountConflict' => 1,
+  );
+  variable_set('ldap_user_conf', $ldap_user_conf);
+
+  $ldap_profile_conf = array(
+    "ldap_fields" =>
+    array(
+      0 => "samaccountname",
+      1 => "mail",
+    ),
+    "mapping" => array(
+      "username" => "samaccountname",
+      "mail" => "mail",
+      "field_full_name" => "displayname",
+    ),
+    "derivedMapping" =>
+    array(
+      "field_full_name" =>
+      array(
+        "derive" => FALSE,
+        "derive_value" => "",
+      ),
+    ),
+  );
+
+  variable_set('ldap_profile_conf', $ldap_profile_conf);
+
+  variable_set('ldap_servers_encryption', 10);
+
+  variable_set('session_limit_behaviour', '1');
+  variable_set('session_limit_masquerade_ignore', 1);
+  variable_set('session_limit_max', '1');
+
+  variable_set('show_memcache_statistics', 0);
+
+  // For new installs, disable toolbar from guardr and enable navbar.
+  classic_core_update_7003();
+
+}
+
+/**
+ * Implements hook_update_dependencies().
+ */
+function classic_update_dependencies() {
+  // Ensure that ldap_servers_update_7112 has been run prior to running
+  // classic_update_7000.
+  $dependencies['classic'][7000] = array(
+    'ldap_servers' => 7112,
+  );
+  // Ensure that classic_update_7000 is run prior to running any of the
+  // ldap_server database updates for the 2.x branch.
+  $dependencies['ldap_servers'][7203] = array(
+    'classic' => 7000,
+  );
+  return $dependencies;
+}
+
+/**
+ * GENERAL-369: Updates LDAP config.
+ *
+ * The ldap_server module has updated its schema definition which prevents the
+ * associated update hooks from successfully completing. This update addresses
+ * those field name changes so that LDAP will be configured appropriately after
+ * running the database updates.
+ */
+function classic_update_7000() {
+  if (module_exists('ldap_authentication') || module_exists('ldap_authorization')) {
+    module_enable(array('ldap_user'), TRUE);
+  }
+
+  // Add missing database fields for the LDAP modules.
+  foreach (array('ldap_servers', 'ldap_authorization', 'ldap_query') as $module) {
+    if (!module_exists($module)) {
+      continue;
+    }
+    $schema = drupal_get_schema_unprocessed($module);
+    // These are the current (7.x-2.4) field names keyed by their previous field
+    // names. This mapping can be found in ::ldap_server_update_7203().
+    $changes = $module != 'ldap_servers' ? array() : array(
+      'testingDrupalUserDn' => 'testing_drupal_user_dn',
+      'group_object_category' => 'grp_object_cat',
+      'groupFunctionalityUnused' => 'grp_unused',
+      'groupNested' => 'grp_nested',
+      'groupUserMembershipsAttrExists' => 'grp_user_memb_attr_exists',
+      'groupUserMembershipsAttr' => 'grp_user_memb_attr',
+      'groupMembershipsAttr' => 'grp_memb_attr',
+      'groupMembershipsAttrMatchingUserAttr' => 'grp_memb_attr_match_user_attr',
+      'groupDeriveFromDn' => 'grp_derive_from_dn',
+      'groupDeriveFromDnAttr' => 'grp_derive_from_dn_attr',
+      'groupTestGroupDn' => 'grp_test_grp_dn',
+      'groupTestGroupDnWriteable' => 'grp_test_grp_dn_writeable',
+    );
+    foreach ($schema as $table_name => $table_schema) {
+      foreach ($table_schema['fields'] as $field_name => $field_schema) {
+        // If the field doesn't exist, we need to create it.
+        if (!db_field_exists($table_name, $field_name)) {
+          // Before we create the field, make sure that the field truly does not
+          // exist - it is possible that it just needs to be renamed so check
+          // the $changes array for the existence of $field_name.
+          if (($old_field = array_search($field_name, $changes)) && db_field_exists($table_name, $old_field)) {
+            db_change_field($table_name, $old_field, $field_name, $field_schema);
+            continue;
+          }
+          db_add_field($table_name, $field_name, $field_schema);
+        }
+      }
+    }
+  }
+
+  $field_changes = array();
+  if (db_table_exists($auth_table = 'ldap_authorization')) {
+    $query = db_select($auth_table);
+    // If the record is enabled and the consumer_type is "drupal_role" it should
+    // have a higher weight.
+    $weight = 'SUM(status + IF(consumer_type = :type, 1, 0))';
+    $query->addExpression($weight, 'weight', array(':type' => 'drupal_role'));
+    $ldap_authorization_record = $query
+      ->fields($auth_table)
+      ->condition(db_or()->condition('status', 1)->condition('consumer_type', 'drupal_role'))
+      ->groupBy('numeric_consumer_conf_id')
+      ->orderBy('weight', 'DESC')
+      ->execute()
+      ->fetch();
+
+    $sid = db_select('ldap_servers')->fields('ldap_servers', array('sid'))->execute()->fetchField();
+    if ($sid && $ldap_authorization_record && $ldap_authorization_record->sid == $sid) {
+      $field_changes['ldap_servers'][$sid]['grp_unused'] = 0;
+      if ($ldap_authorization_record->derive_from_dn) {
+        $field_changes['ldap_servers'][$sid]['grp_derive_from_dn'] = 1;
+        $field_changes['ldap_servers'][$sid]['grp_derive_from_dn_attr'] = $ldap_authorization_record->derive_from_dn_attr;
+      }
+      if ($ldap_authorization_record->derive_from_attr) {
+        $field_changes['ldap_servers'][$sid]['grp_user_memb_attr_exists'] = 1;
+        $field_changes['ldap_servers'][$sid]['grp_user_memb_attr'] = $ldap_authorization_record->derive_from_attr_attr;
+      }
+      if ($ldap_authorization_record->derive_from_entry) {
+        $field_changes['ldap_servers'][$sid]['grp_memb_attr'] = $ldap_authorization_record->derive_from_entry_attr;
+        $field_changes['ldap_servers'][$sid]['grp_memb_attr_match_user_attr'] = $ldap_authorization_record->derive_from_entry_entries_attr;
+      }
+      if ($ldap_authorization_record->derive_from_entry_nested) {
+        $field_changes['ldap_servers'][$sid]['grp_nested'] = 1;
+      }
+      if ($ldap_authorization_record->derive_from_attr_use_first_attr || $ldap_authorization_record->derive_from_entry_use_first_attr) {
+        $field_changes['ldap_authorization'][$sid]['use_first_attr_as_groupid'] = 1;
+      }
+      // This was not included in ldap_servers_update_7201 but is necessary to
+      // pull in any defined LDAP groups and the Drupal roles to which they
+      // should be mapped. In 2.x this is stored as a serialized array.
+      if ($ldap_authorization_record->mappings && unserialize($ldap_authorization_record->mappings) === FALSE) {
+        $roles = array_flip(user_roles(TRUE));
+        $create_consumers = (bool) $ldap_authorization_record->create_consumers;
+        // Split the stored role mappings on one or more line break - ignoring
+        // empty lines. Role mappings were previously stored as:
+        $mappings = preg_split('/[\r\n]+/', $ldap_authorization_record->mappings, NULL, PREG_SPLIT_NO_EMPTY);
+        $field_changes['ldap_authorization'][$sid]['mappings'] = serialize(array_map(function ($mapping) use ($create_consumers, $roles) {
+          // Create an array of $from (LDAP Group) & $user_entered (Drupal role)
+          // by exploding the line on the pipe (|) character.
+          list($from, $user_entered) = explode('|', $mapping);
+          // Return a keyed array containing the values as defined in
+          // LdapAuthorizationConsumerDrupalRole::normalizeMappings.
+          return array(
+            'user_entered' => $user_entered,
+            'from' => $from,
+            'normalized' => $user_entered,
+            'simplified' => $user_entered,
+            'valid' => ($valid = $create_consumers || !empty($roles[$user_entered])),
+            'error_message' => $valid ? '' : t('Role %role_name does not exist and role creation is not enabled.', array(
+              '%role' => $user_entered,
+            )),
+          );
+        }, $mappings));
+      }
+    }
+  }
+
+  // Update the database with the necessary changes to the ldap_authorization
+  // and ldap_servers table.
+  foreach ($field_changes as $table_name => $record) {
+    foreach ($record as $id => $field_data) {
+      if (count($field_data)) {
+        db_update($table_name)->fields($field_data)->condition('sid', $id)->execute();
+      }
+    }
+  }
+
+  // These are fields from the 1.x branch that are no longer needed in 2.x.
+  $ldap_authorization_fields_to_remove = array(
+    'derive_from_dn',
+    'derive_from_dn_attr',
+    'derive_from_attr',
+    'derive_from_entry',
+    'derive_from_attr_attr',
+    'derive_from_entry_attr',
+    'derive_from_entry_entries_attr',
+    'derive_from_entry_nested',
+    'derive_from_entry_search_all',
+    'derive_from_entry_use_first_attr',
+    'derive_from_attr_use_first_attr',
+  );
+  foreach ($ldap_authorization_fields_to_remove as $ldap_authorization_field) {
+    db_drop_field('ldap_authorization', $ldap_authorization_field);
+  }
+
+  // Make updates to the config data that is stored in the `variable` table.
+  $ldap_authentication_conf_data = variable_get('ldap_authentication_conf', array());
+  if (!is_array($ldap_authentication_conf_data['sids'])) {
+    $ldap_authentication_conf_data['sids'] = array();
+  }
+  $ldap_user_conf_data = variable_get('ldap_user_conf', array());
+  $ldap_authentication_sids = array_keys($ldap_authentication_conf_data['sids']);
+  if (count($ldap_authentication_sids) == 1) {
+    $ldap_user_conf_data['drupalAcctProvisionServer'] = $ldap_authentication_sids[0];
+  }
+  $ldap_user_conf_data['userConflictResolve'] = $ldap_authentication_conf_data['loginConflictResolve'] ?? LDAP_USER_CONFLICT_RESOLVE_DEFAULT;
+  unset($ldap_authentication_conf_data['loginConflictResolve']);
+  $ldap_user_conf_data['acctCreation'] = $ldap_authentication_conf_data['acctCreation'] ?? LDAP_USER_ACCT_CREATION_LDAP_BEHAVIOR_DEFAULT;
+  unset($ldap_authentication_conf_data['acctCreation']);
+  $ldap_user_conf_data['manualAccountConflict'] = LDAP_USER_MANUAL_ACCT_CONFLICT_REJECT;
+  variable_set('ldap_authentication_conf', $ldap_authentication_conf_data);
+  variable_set('ldap_user_conf', $ldap_user_conf_data);
+}

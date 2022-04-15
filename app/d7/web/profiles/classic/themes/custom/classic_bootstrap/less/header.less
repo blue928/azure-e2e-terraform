@@ -1,0 +1,39 @@
+// Insert your styling here.
+
+#navbar {
+	padding: @padding-base-vertical @padding-base-horizontal;
+	//#gradient > .vertical(@hdt-red, @hdb-red);
+	background: #333;
+	border-radius: 0;
+
+	.navbar-nav a, 
+	.navbar-nav a:hover, 
+	.navbar-nav a:focus {
+		background: none;
+		color: @menu-link;
+		transition: opacity .2s ease;
+	}
+	.navbar-nav li {
+		margin-left: 10px;
+
+		&.first a:before {
+			content:"\e008";
+			display: inline-block;
+			font-family: 'Glyphicons Halflings'; 
+			position: absolute;
+			left: -5px;
+		}
+
+		&.last a:before {
+			content:"\e163";
+			display: inline-block;
+			font-family: 'Glyphicons Halflings'; 
+			position: absolute;
+			left: -5px;
+		}
+
+		&:hover {
+			opacity: .5;
+		}
+	}
+}

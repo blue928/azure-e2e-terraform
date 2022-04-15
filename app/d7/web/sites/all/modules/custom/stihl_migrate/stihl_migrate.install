@@ -1,0 +1,23 @@
+<?php
+
+/**
+ * @file
+ * Install and uninstall functions for Stihl migrations.
+ */
+
+/**
+ * Implements hook_enable().
+ */
+function stihl_migrate_enable() {
+  migrate_static_registration();
+}
+
+/**
+ * Implements hook_disable().
+ */
+function stihl_migrate_disable() {
+  Migration::deregisterMigration('PricingImport');
+  Migration::deregisterMigration('ProductImport');
+  Migration::deregisterMigration('ParentTermsImport');
+  Migration::deregisterMigration('ChildTermsImport');
+}

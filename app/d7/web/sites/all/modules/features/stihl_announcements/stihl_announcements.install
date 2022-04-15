@@ -1,0 +1,22 @@
+<?php
+
+/**
+ * @file
+ * Contains schemas & updates for the Stihl Announcements feature.
+ */
+
+/**
+ * STIHL-173: Add a "Create Announcement" link to the Main Menu.
+ */
+function stihl_announcements_update_7001() {
+  $link = [
+    'link_path' => 'node/add/article',
+    'link_title' => 'Create Announcements',
+    'menu_name' => 'main-menu',
+    'weight' => -47,
+    'language' => LANGUAGE_NONE,
+    'plid' => 0,
+    'module' => 'menu',
+  ];
+  menu_link_save($link);
+}

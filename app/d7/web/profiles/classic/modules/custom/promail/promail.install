@@ -1,0 +1,39 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the Pro-Mail module.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function promail_uninstall() {
+  variable_del('promail_web_services_url');
+  variable_del('promail_web_services_user');
+  variable_del('promail_web_services_password');
+  variable_del('promail_soap_version');
+  variable_del('promail_development_test_mode');
+  variable_del('promail_mssql_server_host');
+  variable_del('promail_mssql_server_user');
+  variable_del('promail_mssql_server_password');
+  variable_del('promail_mssql_db_name');
+  variable_del('promail_default_system');
+  variable_del('promail_owner');
+  variable_del('promail_owner_desc');
+  variable_del('promail_additional_owner1');
+  variable_del('promail_additional_owner1_desc');
+  variable_del('promail_additional_owner2');
+  variable_del('promail_additional_owner2_desc');
+  variable_del('promail_additional_owner3');
+  variable_del('promail_additional_owner3_desc');
+  variable_del('promail_development_full_errors');
+}
+
+/**
+ * Remove unused variables from database.
+ */
+function promail_update_7000() {
+  variable_del('promail_development_soap_debug');
+  variable_del('promail_trace_option');
+}

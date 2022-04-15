@@ -1,0 +1,97 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions for the Commerce Order Types module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function commerce_order_types_schema() {
+  $schema['commerce_order_types'] = array(
+    'description' => 'Stores information about Commerce Order item types created via UI.',
+    'primary key' => array('id'),
+    'unique keys' => array(
+      'type' => array('type'),
+    ),
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'description' => 'Primary Key: Unique order type id.',
+      ),
+      'type' => array(
+        'description' => 'The machine-readable name of this type.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'name' => array(
+        'description' => 'The human-readable name of this type.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'help' => array(
+        'description' => 'A brief description of this type.',
+        'type' => 'text',
+        'not null' => FALSE,
+        'size' => 'medium',
+      ),
+      'data' => array(
+        'type' => 'text',
+        'not null' => FALSE,
+        'size' => 'big',
+        'serialize' => TRUE,
+        'description' => 'A serialized array of additional data related to this order type.',
+      ),
+    ) + entity_exportable_schema_fields(),
+  );
+
+  return $schema;
+}
+
+/**
+ * Rename commerce_order_types_order_types_table
+ */
+function commerce_order_types_update_7001() {
+  db_rename_table('commerce_order_types_order_types', 'commerce_order_types');
+  // Add our primary key.
+  db_drop_primary_key('commerce_order_types');
+  $spec = array(
+    'type' => 'serial',
+    'not null' => TRUE,
+    'description' => 'Primary Key: Unique order type id.',
+  );
+  $keys = array(
+    'primary key' => array('id'),
+  );
+  db_add_field('commerce_order_types', 'id', $spec, $keys);
+  // Add our unique keys.
+  db_add_unique_key('commerce_order_types', 'type', array('type'));
+  // Get an array of all the field definitions.
+  $fields = array(
+    'id' => array(
+      'type' => 'serial',
+      'not null' => TRUE,
+      'description' => 'Primary Key: Unique order type id.',
+    ),
+    'data' => array(
+      'type' => 'text',
+      'not null' => FALSE,
+      'size' => 'big',
+      'serialize' => TRUE,
+      'description' => 'A serialized array of additional data related to this order type.',
+    ),
+  ) + entity_exportable_schema_fields();
+  // Add all our fields to the table.
+  foreach ($fields as $field => $spec) {
+    db_add_field('commerce_order_types', $field, $spec);
+  }
+  // We have changed the name of the table, so let's clear the schema cache.
+  drupal_get_complete_schema(TRUE);
+  // The exportable entity changes also need to clear the caches.
+  drupal_flush_all_caches();
+}

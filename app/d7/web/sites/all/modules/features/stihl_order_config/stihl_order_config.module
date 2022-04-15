@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Stihl Order Config feature.
+ */
+
+include_once 'stihl_order_config.features.inc';

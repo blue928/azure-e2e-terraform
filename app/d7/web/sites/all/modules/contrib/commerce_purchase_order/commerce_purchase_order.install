@@ -1,0 +1,103 @@
+<?php
+
+/**
+ * Implements hook_install().
+ */
+function commerce_purchase_order_install() {
+  // Remind user to set validation settings.
+  $settings_url = url('admin/commerce/config/payment-methods/manage/commerce_payment_commerce_purchase_order/edit/3', array('absolute' => TRUE));
+  drupal_set_message(t('Thank you for installing commerce purchase order, kindly set the purchase order by visiting <a href="@settings">purchase order settings</a>.', array('@settings' => $settings_url)), 'status', FALSE);
+}
+
+
+/**
+ * Implements hook_schema().
+ */
+function commerce_purchase_order_schema() {
+  $schema = array();
+  $schema['commerce_purchase_order'] = array(
+    'description' => 'The base table for PO numbers.',
+    'fields' => array(
+      'order_id' => array(
+        'description' => 'The order id.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'transaction_id' => array(
+        'description' => 'The {commerce_payment_transaction}.transaction_id.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'po_number' => array(
+        'description' => 'The PO number.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+    ),
+    'unique keys' => array(
+      'order_po' => array('order_id', 'po_number'),
+    ),
+    'primary key' => array('transaction_id')
+  );
+  return $schema;
+}
+
+/**
+ * Add transaction_id field and make it a primary key.
+ */
+function commerce_purchase_order_update_7001() {
+  $spec = array(
+    'description' => 'The {commerce_payment_transaction}.transaction_id.',
+    'type' => 'int',
+    'unsigned' => TRUE,
+    'default' => NULL,
+  );
+
+  db_add_field('commerce_purchase_order', 'transaction_id', $spec);
+
+  // Try connecting existing PO's with transactions
+  $result = db_select('commerce_payment_transaction', 't')
+    ->fields('t')
+    ->condition('payment_method', 'commerce_purchase_order', 'LIKE')
+    ->execute();
+
+  while ($transaction = $result->fetchAssoc()) {
+    $message_variables = unserialize($transaction['message_variables']);
+    if (isset($message_variables['@po_number'])) {
+      $transaction_id = $transaction['transaction_id'];
+      $order_id = $transaction['order_id'];
+      $po_number = $message_variables['@po_number'];
+      db_update('commerce_purchase_order')
+        ->fields(array(
+          'transaction_id' => $transaction_id,
+        ))
+        ->condition('po_number', $po_number, '=')
+        ->condition('order_id', $order_id, '=')
+        ->execute();
+    }
+  }
+
+  // Delete remaining Purchase Orders (without referencing transactions).
+  // Needed in order to use transaction_id's as primary keys.
+  // Normally the number should always be 0.
+  $num_deleted = db_delete('commerce_purchase_order')
+    ->condition('transaction_id', NULL, 'IS')
+    ->execute();
+
+  // Primary key should be transaction ID.
+  db_drop_primary_key('commerce_purchase_order');
+  db_add_primary_key('commerce_purchase_order', array('transaction_id'));
+
+  // Maintain backward compatibility: order_id-po_number should be unique.
+  db_add_unique_key('commerce_purchase_order', 'order_po', array(
+    'order_id',
+    'po_number'
+  ));
+
+  if ($num_deleted > 0) {
+    return t('@num orphaned PO records have been deleted from commerce_purchase_order table.', array('@num' => $num_deleted));
+  }
+}

@@ -1,0 +1,167 @@
+<?php
+// $Id$
+/**
+ * @file
+ * Install, update and uninstall functions for the fp_template module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function fp_template_schema() {
+  $schema = array();
+  $schema['fp_template'] = array(
+    'description' => 'FusionPro configured templates',
+    'fields' => array(
+      'cid' => array(
+        'description' => 'Configuration entry ID',
+        'type' => 'serial',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'no export' => TRUE,
+      ),
+      'name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'label' => array(
+        'description' => 'A human readable name for the configuration',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'content_type' => array(
+        'description' => 'Content type the configuration goes with',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'display' => array(
+        'description' => 'PDF / JPG display option',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'preview_display' => array(
+        'description' => 'PDF / JPG display option on edit page',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'file_type' => array(
+        'description' => 'File type to request',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => 'pdf',
+      ),
+      'template' => array(
+        'description' => 'Template to request',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'rename_pattern' => array(
+        'description' => 'A token based name for the resulting file',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'active' => array(
+        'description' => 'Active status',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 1,
+      ),
+    ),
+    'primary key' => array('cid'),
+    'unique keys' => array('name' => array('name')),
+  );
+  $schema['fp_template_keywords'] = array(
+    'description' => 'FusionPro configured template keyword maps',
+    'fields' => array(
+      'kid' => array(
+        'description' => 'Keyword entry ID',
+        'type' => 'serial',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+      ),
+      'cid' => array(
+        'description' => 'Configuration entry ID',
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+      ),
+      'keyword' => array(
+        'description' => 'The keyword',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'php_type' => array(
+        'description' => 'The type of value (field or php script)',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'mapped_value' => array(
+        'description' => 'The value',
+        'type' => 'text',
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('kid'),
+  );
+  $schema['fp_template_files'] = array(
+    'description' => 'FusionPro configured template keyword maps',
+    'fields' => array(
+      'nid' => array(
+        'description' => 'Node entry ID',
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+      ),
+      'vid' => array(
+        'description' => 'Node version entry ID',
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+      ),
+      'cid' => array(
+        'description' => 'Configuration entry ID',
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+      ),
+      'fid' => array(
+        'description' => 'File entry ID',
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+      ),
+    ),
+    'primary key' => array('fid'),
+  );
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ */
+function fp_template_install() {
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function fp_template_uninstall() {
+}

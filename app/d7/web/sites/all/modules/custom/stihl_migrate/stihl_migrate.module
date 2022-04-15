@@ -1,0 +1,12 @@
+<?php
+
+/**
+ * @file
+ * Migration module for Stihl.
+ */
+
+/**
+ * Define migrate source csv file paths.
+ */
+define('STIHL_MIGRATE_PRODUCT_IMPORT_PATH', 'private://import_data/products');
+define('STIHL_MIGRATE_PRICING_IMPORT_PATH', 'private://import_data/pricing');

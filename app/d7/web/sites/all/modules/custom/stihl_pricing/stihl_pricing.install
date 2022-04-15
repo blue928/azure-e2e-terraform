@@ -1,0 +1,89 @@
+<?php
+
+/**
+ * @file
+ * Installation and schema hooks for Stihl pricing.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function stihl_pricing_schema() {
+
+  $schema['stihl_pricing'] = array(
+    'description' => 'The base table for Stihl pricing',
+    'fields' => array(
+      'id' => array(
+        'description' => 'The primary identifier for a pricing entity.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'product_name' => array(
+        'description' => 'The product name.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'bd_reference' => array(
+        'description' => 'The distributor id.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+      ),
+      'display_product' => array(
+        'description' => 'Boolean indicating whether to display in-store.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'tiny',
+      ),
+      'display_price' => array(
+        'description' => 'Boolean indicating whether to display price.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'tiny',
+      ),
+      'msrp' => array(
+        'description' => 'The MSRP.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'hangtag_code' => array(
+        'description' => 'The RLC SKU code for hangtags.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'current_year_price' => array(
+        'description' => 'The current year price.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'next_year_price' => array(
+        'description' => 'The next year price.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'created' => array(
+        'description' => 'The Unix timestamp when created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'changed' => array(
+        'description' => 'The Unix timestamp when recently saved.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('id'),
+    'indexes' => array(
+      'id' => array('id'),
+      'bd_id' => array('bd_reference'),
+    ),
+  );
+
+  return $schema;
+}

@@ -1,0 +1,12 @@
+name = Stihl Distributor Pricing
+description = Stihl distributor product pricing as custom entities.
+package = Stihl
+core = 7.x
+
+dependencies[] = stihl_profiles
+dependencies[] = entity
+
+files[] = 'includes/StihlPricingEntity.inc'
+files[] = 'includes/StihlPricingController.inc'
+files[] = 'includes/StihlPricingUIController.inc'
+files[] = 'includes/StihlPricingMetadataController.inc'

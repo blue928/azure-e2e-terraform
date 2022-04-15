@@ -1,0 +1,157 @@
+<?php
+
+/**
+ * @file
+ * Installation and schema hooks for Stihl pricing years.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function stihl_pricing_years_schema() {
+
+  $schema['stihl_pricing_year'] = array(
+    'description' => 'The base table for Stihl pricing years',
+    'fields' => array(
+      'id' => array(
+        'description' => 'The primary identifier for a pricing year entity.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'details' => array(
+        'description' => 'Description of the pricing year.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'default_pricing' => array(
+        'description' => 'Boolean indicating if pricing year is the default.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 1,
+        'size' => 'tiny',
+      ),
+      'pricing_year' => array(
+        'description' => 'The pricing year.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'bulk_one_sided' => array(
+        'description' => 'The unit price for one-sided products ordered in bulk.',
+        'type' => 'float',
+        'unsigned' => TRUE,
+      ),
+      'bulk_two_sided' => array(
+        'description' => 'The unit price for two-sided products ordered in bulk.',
+        'type' => 'float',
+        'unsigned' => TRUE,
+      ),
+      'kitted_one_sided' => array(
+        'description' => 'The unit price for one-sided products in a kit.',
+        'type' => 'float',
+        'unsigned' => TRUE,
+      ),
+      'kitted_two_sided' => array(
+        'description' => 'The unit price for two-sided products in a kit.',
+        'type' => 'float',
+        'unsigned' => TRUE,
+      ),
+      'upc_book' => array(
+        'description' => 'The unit price for downloading UPC books.',
+        'type' => 'float',
+        'unsigned' => TRUE,
+      ),
+      'enabled' => array(
+        'description' => 'Boolean indicating if pricing year is enabled.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 1,
+        'size' => 'tiny',
+      ),
+      'created' => array(
+        'description' => 'The Unix timestamp when created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'changed' => array(
+        'description' => 'The Unix timestamp when recently saved.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('id'),
+    'indexes' => array(
+      'id' => array('id'),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_update_dependencies().
+ */
+function stihl_pricing_years_update_dependencies() {
+  // stihl_pricing_years_update_7002() creates a Stihl Profile entity with an
+  // entity reference field that gets created in stihl_profiles_update_7101().
+  // The entity reference field is then used to reference a newly created Stihl
+  // Pricing Year entity with a new "details" field. The details field is
+  // created in stihl_pricing_years_update_7001().
+  $dependencies['stihl_pricing_years'][7002] = array(
+    'stihl_profiles' => 7101,
+    'stihl_pricing_years' => 7001,
+  );
+  return $dependencies;
+}
+
+/**
+ * STIHL-485: Add 'details' & 'default_pricing' to {stihl_pricing_year} table.
+ */
+function stihl_pricing_years_update_7001() {
+  $table = 'stihl_pricing_year';
+  $schema = drupal_get_schema($table);
+
+  foreach (array('details', 'default_pricing') as $field) {
+    // Add the new field to the db table.
+    db_add_field($table, $field, $schema['fields'][$field]);
+  }
+
+  // Load the existing pricing year entities.
+  $pricing_years = entity_load('stihl_pricing_years');
+
+  // Add details to existing pricing year entities.
+  foreach ($pricing_years as $pricing_year) {
+    $pricing_year->details = 'Default';
+    $pricing_year->default_pricing = TRUE;
+    $pricing_year->save();
+  }
+}
+
+/**
+ * STIHL-481: Adds 2018 Pricing Year for Stihl Pacific - Island.
+ */
+function stihl_pricing_years_update_7002() {
+  // Create the Stihl Pricing Year entity.
+  $pricing_year = entity_create('stihl_pricing_years', array(
+    'pricing_year' => '2018',
+    'details' => 'Stihl Pacific - Island',
+    'default_pricing' => FALSE,
+    'bulk_one_sided' => (float) 0.305,
+    'kitted_one_sided' => (float) 0.335,
+    'bulk_two_sided' => (float) 0.345,
+    'kitted_two_sided' => (float) 0.375,
+    'upc_book' => (float) 0,
+    'enabled' => TRUE,
+  ));
+  $pricing_year->save();
+
+  // Load the profile for Stihl Pacific - Island.
+  $profile = stihl_profiles_load(22);
+  // Associate it with the newly created pricing year.
+  $profile->associated_pricing[LANGUAGE_NONE][0]['target_id'] = $pricing_year->id;
+  $profile->save();
+}

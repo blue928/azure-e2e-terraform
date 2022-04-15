@@ -1,0 +1,283 @@
+<?php
+
+/**
+ * @file
+ * Contains pricing entity functions.
+ */
+
+// Define administrative uri locations.
+define('STIHL_PRICING_MANAGE_URI', 'admin/structure/stihl-pricing');
+define('STIHL_PRICING_VIEW_URI', 'admin/content/stihl-pricing');
+
+/**
+ * Implements hook_entity_info().
+ */
+function stihl_pricing_entity_info() {
+
+  $info['stihl_pricing'] = array(
+    'label' => t('Stihl Pricing'),
+    'base table' => 'stihl_pricing',
+    'entity keys' => array(
+      'id' => 'id',
+      'label' => 'product_name',
+    ),
+
+    'entity class' => 'StihlPricingEntity',
+    'controller class' => 'StihlPricingController',
+    'metadata controller class' => 'StihlPricingMetadataController',
+
+    'load hook' => 'stihl_pricing_load',
+    'uri callback' => 'entity_class_uri',
+
+    'admin ui' => array(
+      'path' => STIHL_PRICING_MANAGE_URI,
+      'controller class' => 'StihlPricingUIController',
+      'menu wildcard' => '%stihl_pricing',
+      'file' => 'includes/stihl_pricing.admin.inc',
+    ),
+
+    'module' => 'stihl_pricing',
+    'access callback' => 'stihl_pricing_access_callback',
+  );
+
+  return $info;
+}
+
+/**
+ * Implements hook_menu().
+ */
+function stihl_pricing_menu() {
+
+  $items['admin/content/stihl-pricing/%'] = array(
+    'title' => 'Stihl Distributor Pricing',
+    'page callback' => 'stihl_pricing_view_entity',
+    'page arguments' => array(3),
+    'access callback' => 'stihl_pricing_access_callback',
+  );
+  $items['admin/config/stihl/pricing-api'] = array(
+    'title' => 'Pricing API Settings',
+    'description' => 'Configuration settings for the pricing API.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('stihl_pricing_admin_pricing_api_form'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'includes/stihl_pricing.admin_pricing_api.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Access callback for Stihl pricing entities.
+ *
+ * @SuppressWarnings(PHPMD.UnusedLocalVariable)
+ */
+function stihl_pricing_access_callback($op = NULL, $profile_entity = NULL, $account = NULL) {
+  if (user_access('administer site configuration', $account)) {
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/**
+ * Entity display page.
+ *
+ * @param int $id
+ *   The id of the entity.
+ *
+ * @return array
+ *   Render array.
+ */
+function stihl_pricing_view_entity($id) {
+  return entity_view('stihl_pricing', array(stihl_pricing_load($id)));
+}
+
+/**
+ * Auto loader for pricing entities.
+ *
+ * @param int $id
+ *   The id of the entity.
+ * @param bool $reset
+ *   Whether to reset cache.
+ *
+ * @return object
+ *   Single entity object.
+ */
+function stihl_pricing_load($id, $reset = FALSE) {
+  $entities = stihl_pricing_load_multiple(array($id), NULL, $reset);
+  return reset($entities);
+}
+
+/**
+ * Load multiple entities with optional conditions.
+ *
+ * @param array $entity_ids
+ *   An array of entity ids.
+ * @param array $conditions
+ *   An array of conditions to filter query.
+ * @param bool $reset
+ *   Whether to reset cache.
+ *
+ * @return array
+ *   An array of entity objects.
+ */
+function stihl_pricing_load_multiple($entity_ids = array(), $conditions = array(), $reset = FALSE) {
+  return entity_load('stihl_pricing', $entity_ids, $conditions, $reset);
+}
+
+/**
+ * Load a pricing entity by SKU & BDIdentifier.
+ *
+ * @param string $sku
+ *   The product SKU.
+ * @param string $bdid
+ *   The BDIdentifier (bd_reference) associated with the SKU.
+ *
+ * @return object
+ *   Returns a pricing entity for the BD & SKU.
+ */
+function stihl_pricing_load_by_sku_for_bd($sku, $bdid) {
+  if (empty($sku) || empty($bdid)) {
+    return NULL;
+  }
+
+  $sql = 'SELECT id FROM {stihl_pricing} WHERE bd_reference = :bdid AND hangtag_code = :sku';
+  $query = db_query($sql, [':sku' => $sku, ':bdid' => $bdid]);
+  $result = $query->fetchField();
+
+  return $result ? stihl_pricing_load($result) : $result;
+}
+
+/**
+ * Initialize the API class.
+ */
+function stihl_pricing_api_init() {
+  module_load_include('inc', 'stihl_pricing', 'includes/StihlPricingApi');
+  $api = new StihlPricingApi();
+  return $api;
+}
+
+/**
+ * Implements hook_cron_queue_info().
+ */
+function stihl_pricing_cron_queue_info() {
+  return [
+    'pricing_update_api' => [
+      'worker callback' => 'stihl_pricing_api_worker_callback',
+      'time' => 30,
+    ],
+  ];
+}
+
+/**
+ * Implements hook_cron().
+ */
+function stihl_pricing_cron() {
+  // Make sure the pricing API is enabled.
+  if (variable_get('stihl_pricing_api_enable', 0)) {
+    $cron_start_time = strtotime(variable_get('stihl_pricing_api_cron_start_time', ''));
+    $cron_end_time = strtotime(variable_get('stihl_pricing_api_cron_end_time', ''));
+
+    // If the cron is restricted to run only during certain times of the day,
+    // ensure that we're within the time constraint.
+    if (variable_get('stihl_pricing_api_cron_enable_timeframe', 0)) {
+      if (REQUEST_TIME > $cron_end_time || REQUEST_TIME < $cron_start_time) {
+        return;
+      }
+    }
+
+    // Get the cron queue.
+    $queue = DrupalQueue::get('pricing_update_api', TRUE);
+
+    // Don't queue up more SKUs until the previous ones have processed.
+    if ($queue->numberOfItems() == '0') {
+      // Clear the report.
+      variable_del('pricing_update_api_report');
+
+      // Initialize the pricing API.
+      $api = stihl_pricing_api_init();
+
+      // Start adding SKUs to the cron queue.
+      foreach ($api->getRedLetterPricing() as $sku_price) {
+        $queue->createItem($sku_price);
+      }
+    }
+  }
+}
+
+/**
+ * Cron worker callback.
+ *
+ * @param array $data
+ *   An array sent from the cron queue.
+ */
+function stihl_pricing_api_worker_callback(array $data) {
+  if (isset($data)) {
+    stihl_pricing_api_update_price($data);
+  }
+}
+
+/**
+ * Update a price entity for a SKU.
+ *
+ * @param array $sku_price
+ *   SKU returned from the pricing API.
+ */
+function stihl_pricing_api_update_price(array $sku_price) {
+
+  $ent = stihl_pricing_load_by_sku_for_bd($sku_price['sku'], $sku_price['bd_reference']);
+  $report = variable_get('pricing_update_api_report', []);
+
+  if (empty($ent)) {
+    $ent = entity_create('stihl_pricing', [
+      'hangtag_code' => $sku_price['sku'],
+      'bd_reference' => $sku_price['bd_reference'],
+    ]);
+    watchdog('stihl_pricing', 'Created pricing for @product', ['@product' => $sku_price['product_name']]);
+  }
+
+  // Updating the fields in the pricing entity if they changed.
+  $update_required = FALSE;
+  $fields = [
+    'msrp',
+    'current_year_price',
+    'next_year_price',
+    'product_name',
+    'display_price',
+    'display_product',
+  ];
+
+  foreach ($fields as $field) {
+    if ($ent->{$field} != $sku_price[$field]) {
+      $update_required = TRUE;
+    }
+    $ent->{$field} = $sku_price[$field];
+  }
+
+  // Save the updates.
+  if ($update_required) {
+    if ($ent->save()) {
+      // Add successfully updated SKUs to the report.
+      if (!$report[$ent->bd_reference]) {
+        $report[$ent->bd_reference] = [];
+      }
+      array_push($report[$ent->bd_reference], $ent->hangtag_code);
+
+      // Log successful price updates.
+      if (variable_get('stihl_pricing_api_log_success', 0)) {
+        $ent_path = NULL;
+        if ($ent_uri = entity_uri('stihl_pricing', $ent)) {
+          $ent_path = l(t('view'), $ent_uri['path']);
+        }
+        watchdog('stihl_pricing', 'Updated pricing for @id', ['@id' => $ent->id],
+          WATCHDOG_NOTICE, $ent_path);
+      }
+    }
+    else {
+      // Log if unable to save entity.
+      watchdog('stihl_pricing', 'Unable to save entity @id', ['@id' => $ent->id], WATCHDOG_ERROR);
+    }
+  }
+
+  // Save the report variable.
+  variable_set('pricing_update_api_report', $report);
+}

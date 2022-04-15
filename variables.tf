@@ -25,3 +25,8 @@ variable "externaldns_domain" {
   type    = string
   default = "bluepresley.com"
 }
+
+variable "cert_manager_email" {
+  type    = string
+  default = "bluepresley@gastonia.com"
+}

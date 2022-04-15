@@ -1,0 +1,16 @@
+name = Stihl Orders
+description = Stihl Custom Order Functionality.
+package = Stihl
+core = 7.x
+configure = admin/config/stihl/orders
+
+dependencies[] = commerce_order
+dependencies[] = commerce_line_item
+dependencies[] = stihl_pricing_years
+
+files[] = views/stihl_orders_handler_field_stihl_operations.inc
+files[] = views/stihl_orders_handler_field_stihl_pop_operations.inc
+files[] = views/stihl_orders_handler_pop_order_name.inc
+files[] = views/stihl_orders_handler_order_name.inc
+files[] = views/stihl_orders_handler_pricing_year_reference.inc
+files[] = inc/stihl_orders.exclude_unpublished.inc

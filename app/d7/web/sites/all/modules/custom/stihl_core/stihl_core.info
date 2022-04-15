@@ -1,0 +1,7 @@
+name = Stihl Core
+description = This module contains utility functions used in the Stihl application.
+package = Stihl
+core = 7.x
+configure = admin/config/stihl
+
+files[] = inc/StihlCoreMail.inc

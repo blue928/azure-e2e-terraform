@@ -1,0 +1,272 @@
+<?php
+/**
+ * @file
+ * stihl_support.features.webform.inc
+ */
+
+/**
+ * Implements hook_webform_defaults().
+ */
+function stihl_support_webform_defaults() {
+$webforms = array();
+  $webforms['support'] = array(
+  'title' => 'Support',
+  'log' => '',
+  'status' => 1,
+  'comment' => 1,
+  'promote' => 0,
+  'sticky' => 0,
+  'type' => 'webform',
+  'language' => 'und',
+  'tnid' => 0,
+  'translate' => 0,
+  'rdf_mapping' => array(
+    'rdftype' => array(
+      0 => 'sioc:Item',
+      1 => 'foaf:Document',
+    ),
+    'title' => array(
+      'predicates' => array(
+        0 => 'dc:title',
+      ),
+    ),
+    'created' => array(
+      'predicates' => array(
+        0 => 'dc:date',
+        1 => 'dc:created',
+      ),
+      'datatype' => 'xsd:dateTime',
+      'callback' => 'date_iso8601',
+    ),
+    'changed' => array(
+      'predicates' => array(
+        0 => 'dc:modified',
+      ),
+      'datatype' => 'xsd:dateTime',
+      'callback' => 'date_iso8601',
+    ),
+    'body' => array(
+      'predicates' => array(
+        0 => 'content:encoded',
+      ),
+    ),
+    'uid' => array(
+      'predicates' => array(
+        0 => 'sioc:has_creator',
+      ),
+      'type' => 'rel',
+    ),
+    'name' => array(
+      'predicates' => array(
+        0 => 'foaf:name',
+      ),
+    ),
+    'comment_count' => array(
+      'predicates' => array(
+        0 => 'sioc:num_replies',
+      ),
+      'datatype' => 'xsd:integer',
+    ),
+    'last_activity' => array(
+      'predicates' => array(
+        0 => 'sioc:last_activity_date',
+      ),
+      'datatype' => 'xsd:dateTime',
+      'callback' => 'date_iso8601',
+    ),
+  ),
+  'path' => array(
+    'pathauto' => 1,
+  ),
+  'webform' => array(
+    'next_serial' => 7,
+    'confirmation' => 'Thanks! Someone from our support staff will respond back to you shortly.',
+    'confirmation_format' => 'filtered_html',
+    'redirect_url' => '<none>',
+    'status' => 1,
+    'block' => 0,
+    'allow_draft' => 0,
+    'auto_save' => 0,
+    'submit_notice' => 1,
+    'confidential' => 0,
+    'submit_text' => '',
+    'submit_limit' => -1,
+    'submit_interval' => -1,
+    'total_submit_limit' => -1,
+    'total_submit_interval' => -1,
+    'progressbar_bar' => 1,
+    'progressbar_page_number' => 0,
+    'progressbar_percent' => 0,
+    'progressbar_pagebreak_labels' => 1,
+    'progressbar_include_confirmation' => 0,
+    'progressbar_label_first' => 'Start',
+    'progressbar_label_confirmation' => 'Complete',
+    'preview' => 0,
+    'preview_next_button_label' => '',
+    'preview_prev_button_label' => '',
+    'preview_title' => '',
+    'preview_message' => '',
+    'preview_message_format' => 'filtered_html',
+    'preview_excluded_components' => array(),
+    'machine_name' => 'support',
+    'record_exists' => TRUE,
+    'roles' => array(
+      0 => 2,
+    ),
+    'emails' => array(
+      0 => array(
+        'email' => 'stihl-portal-support@knowclassic.com',
+        'subject' => 'default',
+        'from_name' => 'default',
+        'from_address' => 'default',
+        'template' => 'default',
+        'excluded_components' => array(
+          0 => 1,
+        ),
+        'html' => 0,
+        'attachments' => 0,
+        'exclude_empty' => 1,
+        'extra' => FALSE,
+        'status' => 1,
+        'components_machine_names' => array(
+          'email' => FALSE,
+          'subject' => FALSE,
+          'from_name' => FALSE,
+          'from_address' => FALSE,
+        ),
+      ),
+      1 => array(
+        'email' => 'STIHLOrderAdmins@rlci.com',
+        'subject' => 'default',
+        'from_name' => 'default',
+        'from_address' => 'default',
+        'template' => 'default',
+        'excluded_components' => array(
+          0 => 1,
+        ),
+        'html' => 0,
+        'attachments' => 0,
+        'exclude_empty' => 1,
+        'extra' => FALSE,
+        'status' => 0,
+        'components_machine_names' => array(
+          'email' => FALSE,
+          'subject' => FALSE,
+          'from_name' => FALSE,
+          'from_address' => FALSE,
+        ),
+      ),
+    ),
+    'components' => array(
+      'support__instructions' => array(
+        'form_key' => 'instructions',
+        'name' => 'Instructions',
+        'type' => 'markup',
+        'value' => 'Complete the form below and someone from our support staff will respond back to you shortly.',
+        'extra' => array(
+          'format' => 'filtered_html',
+          'private' => 0,
+          'display_on' => 'form',
+        ),
+        'required' => 0,
+        'weight' => 0,
+        'machine_name' => 'support__instructions',
+        'page_num' => 1,
+      ),
+      'support__help_topic' => array(
+        'form_key' => 'help_topic',
+        'name' => 'Help Topic',
+        'type' => 'select',
+        'value' => 'General Support',
+        'extra' => array(
+          'items' => 'support | General Support
+upc_book | UPC Book',
+          'multiple' => 0,
+          'title_display' => 'before',
+          'description_above' => 0,
+          'private' => 0,
+          'wrapper_classes' => '',
+          'css_classes' => '',
+          'aslist' => 1,
+          'empty_option' => '',
+          'optrand' => 0,
+          'other_option' => NULL,
+          'other_text' => 'Other...',
+          'description' => '',
+          'custom_keys' => FALSE,
+          'options_source' => '',
+          'analysis' => TRUE,
+        ),
+        'required' => 0,
+        'weight' => 1,
+        'machine_name' => 'support__help_topic',
+        'page_num' => 1,
+      ),
+      'support__title' => array(
+        'form_key' => 'title',
+        'name' => 'Title',
+        'type' => 'textfield',
+        'value' => '',
+        'extra' => array(
+          'title_display' => 'before',
+          'description_above' => 0,
+          'private' => 0,
+          'wrapper_classes' => '',
+          'css_classes' => '',
+          'maxlength' => 140,
+          'width' => '',
+          'field_prefix' => '',
+          'field_suffix' => '',
+          'disabled' => 0,
+          'unique' => 0,
+          'description' => '',
+          'placeholder' => '',
+          'attributes' => array(),
+          'analysis' => FALSE,
+          'minlength' => '',
+        ),
+        'required' => 1,
+        'weight' => 2,
+        'machine_name' => 'support__title',
+        'page_num' => 1,
+      ),
+      'support__message' => array(
+        'form_key' => 'message',
+        'name' => 'Message',
+        'type' => 'textarea',
+        'value' => '',
+        'extra' => array(
+          'title_display' => 'before',
+          'description_above' => 0,
+          'private' => 0,
+          'wrapper_classes' => '',
+          'css_classes' => '',
+          'cols' => '',
+          'rows' => '',
+          'resizable' => 1,
+          'disabled' => 0,
+          'description' => '',
+          'placeholder' => '',
+          'attributes' => array(),
+          'analysis' => FALSE,
+        ),
+        'required' => 1,
+        'weight' => 3,
+        'machine_name' => 'support__message',
+        'page_num' => 1,
+      ),
+    ),
+    'conditionals' => array(),
+  ),
+  'cid' => 0,
+  'last_comment_name' => NULL,
+  'last_comment_uid' => 0,
+  'comment_count' => 0,
+  'name' => '',
+  'picture' => 0,
+  'data' => NULL,
+  'webform_features_author' => '',
+  'webform_features_revision_author' => '',
+);
+return $webforms;
+}

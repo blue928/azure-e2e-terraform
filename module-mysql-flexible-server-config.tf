@@ -28,8 +28,10 @@ module "mysql-flexible-server" {
   fs_db_server_prod_db_name = "${var.project_name}productiondb"
 
   # Firewall access
-  fs_fw_start_ip_address = "98.24.104.193"
-  fs_fw_end_ip_address   = "98.24.104.193"
+  #fs_fw_start_ip_address = "98.24.104.193"
+  #fs_fw_end_ip_address   = "98.24.104.193"
+   fs_fw_start_ip_address = "0.0.0.0"
+  fs_fw_end_ip_address   = "0.0.0.0"
 
   # Default number of days to store backups.
   # 

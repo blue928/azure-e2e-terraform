@@ -1,0 +1,184 @@
+<?php
+
+/**
+ * Update banner block.().
+ */
+function stihl_product_views_update_7029() {
+  db_update('block')
+    ->fields([
+      'title' => "<none>",
+      'visibility' => 1,
+      'pages' => "<front>\r\nhangtags\r\npop",
+      'status' => 1,
+      'weight' => -24,
+    ])
+    ->condition('theme', "stihl", '=')
+    ->condition('bid', "banners-block", '=')
+    ->execute();
+
+  $block_role = [
+    'module' => "views",
+    'delta' => "banners-block",
+    'rid' => 2,
+  ];
+
+  db_merge('block_role')
+    ->key($block_role)
+    ->fields($block_role)
+    ->execute();
+}
+
+/**
+ * Primary and secondary navigation updates.().
+ */
+function stihl_product_views_update_7045() {
+  $main_menus = db_query("SELECT * FROM {menu_links} WHERE menu_name=:menu_name", array(':menu_name' => "main-menu"))->fetchAllAssoc('mlid');
+
+  if (!empty($main_menus)) {
+    foreach($main_menus as $mlid => $item) {
+      menu_link_delete($mlid);
+    }
+  }
+
+  $menu_hangtags = db_query("SELECT * FROM {menu_links} WHERE menu_name=:menu_name", array(':menu_name' => "menu-hangtags"))->fetchAllAssoc('mlid');
+
+  if (!empty($menu_hangtags)) {
+    foreach($menu_hangtags as $mlid => $item) {
+      menu_link_delete($mlid);
+    }
+  }
+
+  $menu_pop = db_query("SELECT * FROM {menu_links} WHERE menu_name=:menu_name", array(':menu_name' => "menu-pop-catalog"))->fetchAllAssoc('mlid');
+
+  if (!empty($menu_pop)) {
+    foreach($menu_pop as $mlid => $item) {
+      menu_link_delete($mlid);
+    }
+  }
+
+  menu_link_delete(7517);
+  menu_link_delete(7516);
+
+  $menu_links = [];
+
+  $menu_links[] = [
+    'link_title' => 'Create Announcements',
+    'link_path' => 'node/add/article',
+    'menu_name' => 'main-menu',
+    'weight' => 10,
+    'expanded' => 0,
+    'roles' => [3],
+  ];
+
+  $menu_links[] = [
+    'link_title' => 'Create TAG Order',
+    'link_path' => 'orders/new',
+    'menu_name' => 'menu-hangtags',
+    'weight' => 0,
+    'expanded' => 0,
+    'context' => ['hangtag_layout' => 1],
+  ];
+
+  $menu_links[] = [
+    'link_title' => 'TAG Order History',
+    'link_path' => 'orders/list',
+    'menu_name' => 'menu-hangtags',
+    'weight' => 1,
+    'expanded' => 0,
+    'context' => ['hangtag_layout' => 1],
+  ];
+
+  $menu_links[] = [
+    'link_title' => 'Hangtag Orders',
+    'link_path' => 'hangtags',
+    'menu_name' => 'main-menu',
+    'weight' => 0,
+    'expanded' => 0,
+    'roles' => [3,4,5],
+  ];
+
+  $menu_links[] = [
+    'link_title' => 'POP Catalog',
+    'link_path' => 'pop-catalog',
+    'menu_name' => 'menu-pop-catalog',
+    'weight' => 0,
+    'expanded' => 0,
+    'context' => ['pop_layout' => 1],
+  ];
+
+  $menu_links[] = [
+    'link_title' => 'Current Order',
+    'link_path' => 'cart',
+    'menu_name' => 'menu-pop-catalog',
+    'weight' => 5,
+    'expanded' => 0,
+    'context' => ['pop_layout' => 1],
+  ];
+
+  $menu_links[] = [
+    'link_title' => 'POP Order History',
+    'link_path' => 'pop-catalog/orders/list',
+    'menu_name' => 'menu-pop-catalog',
+    'weight' => 10,
+    'expanded' => 0,
+    'roles' => [3,17,18],
+    'context' => ['pop_layout' => 1],
+  ];
+
+  $menu_links[] = [
+    'link_title' => 'Manage POP Products',
+    'link_path' => 'pop-catalog/products/list',
+    'menu_name' => 'menu-pop-catalog',
+    'weight' => 15,
+    'expanded' => 0,
+    'context' => ['pop_layout' => 1],
+    'roles' => [3,17],
+  ];
+
+  $menu_links[] = [
+    'link_title' => 'POP Orders',
+    'link_path' => 'pop',
+    'menu_name' => 'main-menu',
+    'weight' => 5,
+    'expanded' => 0,
+    'roles' => [3,18,17],
+  ];
+
+  foreach ($menu_links as $menu_link) {
+    $exists_link = db_query("SELECT mlid from {menu_links} WHERE link_path=:link_path AND menu_name=:menu_name", array(':link_path' => $menu_link['link_path'], ':menu_name' => $menu_link['menu_name']))->fetchField();
+
+    $link = $menu_link;
+    unset($link['roles']);
+    unset($link['context']);
+    if ($exists_link) {
+      $link['mlid'] = $exists_link;
+    }
+
+    $mlid = menu_link_save($link);
+    // Save the record if the data does not exist
+    if ($mlid) {
+      if (isset($menu_link['roles'])) {
+        $link_roles = [
+          'mlid' => $mlid,
+          'roles' => $menu_link['roles'],
+        ];
+        if ($exists_link) {
+          _menu_item_visibility_menu_link_update($link_roles);
+        } else {
+          menu_item_visibility_menu_link_insert($link_roles);
+        }
+      }
+
+      if (isset($menu_link['context'])) {
+        context_menu_item_visibility_menu_link_delete([
+          'mlid' => $mlid,
+          'context' => $menu_link['context'],
+        ]);
+        context_menu_item_visibility_menu_link_insert([
+          'mlid' => $mlid,
+          'context' => $menu_link['context'],
+        ]);
+      }
+    }
+  }
+}

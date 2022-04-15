@@ -1,0 +1,13 @@
+name = Stihl Migrate
+description = Import csv migrations for products and pricing.
+package = Stihl
+core = 7.x
+
+dependencies[] = migrate
+dependencies[] = migrate_extras
+dependencies[] = commerce_migrate
+
+files[] = includes/base.inc
+files[] = includes/pricing.inc
+files[] = includes/products.inc
+files[] = includes/terms.inc

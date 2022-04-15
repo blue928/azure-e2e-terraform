@@ -1,0 +1,97 @@
+<?php
+/**
+ * @file
+ * Classic distro's core module for updates and code library.
+ */
+
+/**
+ * Helper module for downloading files.
+ *
+ * @param string $uri
+ *   The uri of the file the download.
+ */
+function classic_core_force_download($uri) {
+  if (file_exists($uri)) {
+    // Turn off Apache gzip compression.
+    apache_setenv('no-gzip', '1');
+    apache_setenv('dont-vary', '1');
+
+    // Turn off php zlib compression.
+    ini_set('zlib.output_compression', 0);
+
+    // Get filename from the uri.
+    $filename = drupal_basename($uri);
+
+    // Get mime type.
+    $mime_type = file_get_mimetype($uri);
+
+    // Build headers.
+    $headers = array(
+      'Expires' => '-1',
+      'Content-Type' => $mime_type,
+      'Content-Disposition' => 'attachment; filename=' . $filename,
+      'Content-Transfer-Encoding' => 'binary',
+      'Content-Length' => filesize($uri),
+    );
+
+    // Add IE only headers. This is only needed for IE <= 7.
+    if (isset($_SERVER['HTTP_USER_AGENT']) && (strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== FALSE)) {
+      header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+      header('Pragma: public');
+    }
+    else {
+      header('Pragma: no-cache');
+    }
+
+    // Start file download.
+    file_transfer($uri, $headers);
+  }
+}
+
+/**
+ * Utility to change the max length of a text field.
+ *
+ * @param string $field_name
+ *   The field name of the text field to lengthen.
+ *
+ * @param int $new_length
+ *   New length to use.
+ */
+function classic_core_change_text_field_max_length($field_name, $new_length) {
+  $field_table = 'field_data_' . $field_name;
+  $field_revision_table = 'field_revision_' . $field_name;
+  $field_column = $field_name . '_value';
+
+  // Alter value field length in fields table.
+  db_query("ALTER TABLE `{$field_table}` CHANGE `{$field_column}` `{$field_column}` VARCHAR( {$new_length} )");
+  // Alter value field length in fields revision table.
+  db_query("ALTER TABLE `{$field_revision_table}` CHANGE `{$field_column}` `{$field_column}` VARCHAR( {$new_length} )");
+
+  // Update field config with new max length.
+  $result = db_query("SELECT CAST(`data` AS CHAR(10000) CHARACTER SET utf8) FROM `field_config` WHERE field_name = '{$field_name}'");
+  $config = $result->fetchField();
+  $config_array = unserialize($config);
+  $config_array['settings']['max_length'] = $new_length;
+  $config = serialize($config_array);
+  db_update('field_config')
+    ->fields(array('data' => $config))
+    ->condition('field_name', $field_name)
+    ->execute();
+}
+
+/**
+ * Validate user input in the contact form.
+ */
+function classic_core_form_validation($form, &$form_state) {
+  $language = LANGUAGE_NONE;
+  $values = $form_state['values'];
+
+  foreach ($values as $key => $value) {
+    // Validate fields with 'phone' in the key using the format: xxx-xxx-xxxx.
+    if ($key == 'phone' || strpos($key, 'phone') == TRUE) {
+      if (!preg_match('/^[0-9]{3}-[0-9]{3}-[0-9]{4}$/', $value[$language][0]['value'])) {
+        form_set_error($key, t('Phone number should contain only numbers and hyphens. (eg: 888-555-1212)'));
+      }
+    }
+  }
+}

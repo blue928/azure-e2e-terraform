@@ -1,0 +1,52 @@
+// Insert your styling here.
+
+body.logged-in > footer {
+	//.visible-xs-block; 
+	//can use this class to show/hide for screen sizes like display none
+	padding-left: 80px;
+
+	&.container {width: 100%;}
+
+	.region-footer {
+		max-width: 1200px;
+		margin: 0 auto;
+	}
+
+	.block {
+		float: left;
+		width: 100%;
+		padding: 1em;
+
+		@media (min-width: @screen-sm-min) {
+    		width: 48.5%;
+    		margin-right: 3%;
+  		}
+
+		&:nth-child(2) {
+			float: right;
+			margin: 0;
+		}
+
+		h2 {
+			margin-top: 0;
+			padding-bottom: .25em;
+			border-bottom: 1px dashed @gray-dark;
+			font-size: @font-size-large;
+		}
+
+		ul {
+			padding-left: 0;
+
+			li {
+	    		border-top: 1px solid @brand-primary;
+	    		list-style: none;
+	    		padding: 0.5em 0px;
+	    		width: 100%;
+
+	    		&.first {
+	    			border: none;
+	    		}
+			}
+		}
+	}
+}

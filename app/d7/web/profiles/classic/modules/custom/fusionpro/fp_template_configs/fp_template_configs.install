@@ -1,0 +1,94 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the fp_template_config module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function fp_template_configs_schema() {
+  $schema = array();
+  $schema['fp_template_config'] = array(
+    'description' => 'FusionPro template configuration',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Configuration entry ID',
+        'type' => 'serial',
+        'not null' => TRUE,
+      ),
+      'name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'status' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => ENTITY_CUSTOM,
+        'size' => 'tiny',
+        'description' => 'The exportable status of the entity.',
+      ),
+      'module' => array(
+        'description' => 'The name of the providing module if the entity has been defined in code.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ),
+      'description' => array(
+        'description' => 'A description for the configuration',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'file_type' => array(
+        'description' => 'File type to request',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => 'pdf',
+      ),
+      'data_format' => array(
+        'description' => 'Data format of the template',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => 'xml',
+      ),
+      'template' => array(
+        'description' => 'Template to request',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'cfg_file' => array(
+        'description' => 'Name of the template cfg file',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'cache' => array(
+        'description' => 'Boolean indicating if output cacheing should be enabled.',
+        'type' => 'int',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'created' => array(
+        'description' => 'The Unix timestamp when created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'changed' => array(
+        'description' => 'The Unix timestamp when recently saved.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('id'),
+    'unique keys' => array('name' => array('name')),
+  );
+  return $schema;
+}

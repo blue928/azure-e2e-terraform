@@ -1,0 +1,110 @@
+name = Classic
+distribution_name = Classic
+description = Drupal distribution for common features used across Classic Graphics applications and websites. The Classic distro uses Guardr as a base profile.
+core = 7.x
+
+base = guardr
+exclusive = TRUE
+
+; Core
+; ----
+dependencies[] = block
+dependencies[] = comment
+dependencies[] = contextual
+dependencies[] = dashboard
+dependencies[] = dblog
+dependencies[] = field
+dependencies[] = field_sql_storage
+dependencies[] = field_ui
+dependencies[] = file
+dependencies[] = filter
+dependencies[] = help
+dependencies[] = image
+dependencies[] = list
+dependencies[] = menu
+dependencies[] = node
+dependencies[] = number
+dependencies[] = options
+dependencies[] = path
+dependencies[] = rdf
+dependencies[] = search
+dependencies[] = shortcut
+dependencies[] = system
+dependencies[] = taxonomy
+dependencies[] = text
+dependencies[] = update
+dependencies[] = user
+
+
+; Contrib
+; -------
+dependencies[] = advanced_help
+dependencies[] = cck
+dependencies[] = ctools
+dependencies[] = deploy_info
+dependencies[] = diskfree
+dependencies[] = environment_indicator
+dependencies[] = features
+dependencies[] = filter_perms
+dependencies[] = mail_logger
+dependencies[] = module_filter
+dependencies[] = navbar
+dependencies[] = pathauto
+dependencies[] = permission_grid
+dependencies[] = token
+dependencies[] = views
+dependencies[] = views_ui
+dependencies[] = x_originating_ip
+
+
+; Custom
+; ------
+dependencies[] = classic_core
+
+
+; Themes
+; ------
+theme = classic_bootstrap
+
+
+; Settings
+; --------
+variables[site_name] = Classic distribution
+variables[site_mail] = dev@knowclassic.com
+variables[site_default_country] = US
+variables[date_default_timezone] = America/New_York
+variables[date_format_long] = l, F j, Y - g:ia
+variables[date_format_medium] = D, m/d/Y - g:ia
+variables[date_format_short] = m/d/Y - g:ia
+variables[date_format_short_date_and_time] = M. d h:iA
+variables[date_format_short_date_only] = M. d
+variables[date_format_time_only] = h:iA
+variables[date_first_day] = 0
+variables[configurable_timezones] = 0
+variables[admin_theme] = seven
+variables[site_frontpage] = node/1
+variables[diskfree_alert_email] = tech@cgraphics.com
+
+; Set inactive_user defaults
+; --------------------------
+variables[inactive_user_auto_block] = 7776000
+variables[inactive_user_auto_block_warn] = 259200
+variables[inactive_user_block_warn_text] = "We haven't seen you at %sitename since %lastaccess, and we miss you!  This automatic message is to warn you that your account will be disabled in %period unless you come back and visit us before that time.
+
+Please visit us at %siteurl.
+
+Sincerely,
+  %sitename team"
+
+
+; Content
+; -------
+nodes[front][type] = page
+nodes[front][title] = Welcome to your new Classic distribution site!
+nodes[front][uid] = 1
+nodes[front][language] = und
+nodes[front][body][und][0][value] = <p>The Classic distribution is a Drupal distribution which provides common features used across Classic Graphics applications. It uses the <a href="http://drupal.org/project/guardr">Guardr distribution</a> as a base distribution to provide security requirements and enhancements.</p><p><a href="/user">Login/Log out</a></p>
+nodes[front][body][und][0][format] = full_html
+
+
+files[] = classic.profile

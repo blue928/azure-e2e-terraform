@@ -1,0 +1,5 @@
+name = Session Expire
+description = Expires rows from the session table older than a certain time.
+core = 7.x
+
+files[] = session_expire.module

@@ -1,0 +1,10 @@
+name = Real name
+description = Provides token-based name displays for users.
+core = 7.x
+configure = admin/config/people/realname
+dependencies[] = token
+
+; Tests
+test_dependencies[] = entity
+files[] = tests/realname.test
+files[] = tests/realname_entity.test

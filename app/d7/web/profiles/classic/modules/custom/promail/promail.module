@@ -1,0 +1,526 @@
+<?php
+
+/**
+ * @file
+ * Pro-Mail Web Service client.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function promail_menu() {
+  $items['admin/config/services/promail'] = array(
+    'title' => 'Pro-Mail',
+    'description' => 'Settings for Pro-Mail Web Services integration.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('promail_admin_settings'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'promail.admin.inc',
+    'file path' => drupal_get_path('module', 'promail'),
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_mail().
+ */
+function promail_mail($key, &$message, $params) {
+  global $base_url;
+  global $user;
+
+  switch ($key) {
+    case 'failed_order':
+      $order = $params['order_number'];
+      $method = $params['method'];
+      $username = $user->name;
+      $date = date('c', time());
+      $message['subject'] = "ERROR: Pro-Mail Order Creation Failure ($base_url)";
+      $message['body'][] = <<<MES
+There was an error in the XML transmission to VeraCore for this completed order. Please login to the $base_url for my details.
+
+Order Number: $order
+Date: $date
+User: $username
+Method: $method
+MES;
+      break;
+
+    case 'failed_connection':
+      $method = $params['method'];
+      $error_message = $params['message'];
+      $username = $user->name;
+      $date = date('c', time());
+      $message['subject'] = "ERROR: Pro-Mail Connection Failure ($base_url)";
+      $message['body'][] = <<<MES
+There was an error in the connection to VeraCore. Please login to the $base_url for my details.
+
+Date: $date
+User: $username
+Method: $method
+
+----- MESSAGE -----
+$error_message
+MES;
+      break;
+
+  }
+}
+
+/**
+ * Establishes communication with the Pro-Mail server.
+ */
+function _promail_connect($method_array) {
+  // Which method to use.
+  $method = $method_array['method'];
+  // Which params to pass to the method.
+  $params = $method_array['params'];
+  $wsdl = variable_get('promail_web_services_url', '');
+  $client_options = array(
+    'trace' => variable_get('promail_development_test_mode', TRUE),
+    'soap_version' => variable_get('promail_soap_version', 'SOAP_1_1'),
+  );
+  $client = new SoapClient($wsdl, $client_options);
+
+  $header = new SoapHeader(
+    'http://sma-promail/',
+    'AuthenticationHeader',
+    array(
+      'Username' => variable_get('promail_web_services_user', ''),
+      'Password' => variable_get('promail_web_services_password', ''),
+    )
+  );
+  $client->__setSoapHeaders($header);
+
+  try {
+    switch ($method) {
+      case 'GetOrderInfo':
+        $result = $client->GetOrderInfo($params);
+        break;
+
+      case 'GetOffers';
+        $result = $client->GetOffers($params);
+        break;
+
+      case 'GetProductAvailabilities':
+        $result = $client->GetProductAvailabilities($params);
+        break;
+
+      case 'GetProduct';
+        $result = $client->GetProduct($params);
+        break;
+
+      case 'GetProductShipmentAllProds':
+        $result = $client->GetProductShipmentAllProds($params);
+        break;
+
+      case 'GetShippingActivity':
+        $result = $client->GetShippingActivity($params);
+        break;
+
+      case 'AddPreRegisteredUser':
+        $result = $client->AddPreRegisteredUser($params);
+        break;
+
+      case 'AddOrder':
+        $result = $client->AddOrder($params);
+        break;
+
+      default:
+        drupal_set_message(t('No method selected'));
+        break;
+    }
+    _promail_debug($client);
+    return $result;
+  }
+  catch (Exception $e) {
+    if (variable_get('promail_development_full_errors', FALSE) == TRUE) {
+      drupal_set_message($e->getMessage(), 'error');
+    }
+    if (!preg_match('/Invalid Order ID/', $e->getMessage())) {
+      drupal_mail('promail', 'failed_connection', variable_get('promail_error_email', 'dev@knowclassic.com'), language_default(), array(
+        'method' => $method,
+        'message' => $e->getMessage(),
+      ));
+    }
+    $message = 'Error calling SoapClient::@method: @error';
+    $replace = array('@method' => $method, '@error' => $e->getMessage());
+    PromailUtility::log($message, $replace);
+  }
+}
+
+/**
+ * Outputs XML of the last SOAP request made into a drupal_set_message().
+ *
+ * @param SoapClient $client
+ *   Client object from whichever SOAP request is being made.
+ */
+function _promail_debug(SoapClient $client) {
+  global $base_url;
+
+  if (variable_get('promail_development_test_mode', FALSE)) {
+    $debug = '<br /><textarea rows="15" cols="75">';
+    $debug .= print_r($client->__getLastRequest(), TRUE);
+    $debug .= '</textarea>';
+    drupal_set_message($debug);
+  }
+}
+
+/**
+ * GetOrderInfo function.
+ *
+ * @param int $orderid
+ *   Positive integer representing the order for which the search is being done.
+ *
+ * @return obj
+ *   Object containing all information about that order.
+ */
+function promail_get_order_info($orderid) {
+  $method_array = array();
+  $method_array['method'] = 'GetOrderInfo';
+  $method_array['params'] = array(
+    'orderId' => $orderid,
+  );
+  $result = _promail_connect($method_array);
+  return $result;
+}
+
+/**
+ * GetProductAvailabilities.
+ *
+ * @param string $part_number
+ *   The number for the product whose availability is being checked.
+ * @param string $owner
+ *   The owner of that particular product in Pro-Mail.
+ *
+ * @return array
+ *   An array containing availability information about the product.
+ */
+function promail_get_product_availabilities($part_number, $owner) {
+  $params = array(
+    'partNumber' => $part_number,
+    'owner' => $owner,
+  );
+
+  $get_product_availabilities['method'] = 'GetProductAvailabilities';
+  $get_product_availabilities['params'] = $params;
+
+  $result = _promail_connect($get_product_availabilities);
+
+  return $result;
+}
+
+/**
+ * GetOffer function.
+ *
+ * @param string $search_string
+ *   Search string used to find information about the offer.
+ * @param bool $search_id
+ *   Search for $search_string in the Offers ID field.
+ * @param bool $search_description
+ *   Search for $search_string in the Offers Descrition field.
+ *
+ * @return obj
+ *   Object containing all information returned about the search performed.
+ */
+function promail_get_offers($search_string, $search_id = 'true', $search_description = 'true') {
+  $params = array(
+    'sortGroups' => '',
+    'categoryGroupDescription' => '',
+    'customCategories' => '',
+    'mailerUID' => '',
+    'searchString' => $search_string,
+    'searchID' => $search_id,
+    'searchDescription' => $search_description,
+    'priceClassDescription' => '',
+  );
+
+  $get_offers['method'] = 'GetOffers';
+  $get_offers['params'] = $params;
+
+  $result = _promail_connect($get_offers);
+
+  return $result;
+}
+
+/**
+ * GetProduct function.
+ *
+ * @param string $product_id
+ *   Search for $product_id in the inventory.
+ * @param string $owner_id
+ *   Owner of the product.
+ */
+function promail_get_product($product_id, $owner_id) {
+  $params = array(
+    'OwnerID' => $owner_id,
+    'ProductID' => $product_id,
+  );
+
+  $get_product['method'] = 'GetProduct';
+  $get_product['params'] = $params;
+
+  $result = _promail_connect($get_product);
+
+  return $result;
+}
+
+/**
+ * GetProductShipmentAllProds function.
+ *
+ * @param string $start_date
+ *   The date at which to start the search.
+ * @param string $end_date
+ *   The date at which to end the search.
+ *
+ * @return obj
+ *   XML "success" message from the Pro-Mail SOAP server.
+ */
+function promail_get_product_shipment_all_prods($start_date, $end_date) {
+  $params = array(
+    'StartDate' => $start_date,
+    'EndDate' => $end_date,
+  );
+
+  $get_product_shipment_all_prods = array();
+  $get_product_shipment_all_prods['method'] = 'GetProductShipmentAllProds';
+  $get_product_shipment_all_prods['params'] = $params;
+
+  $result = _promail_connect($get_product_shipment_all_prods);
+
+  return $result;
+}
+
+/**
+ * GetShippingActivity function.
+ *
+ * @param string $start_date
+ *   The earliest date in the search string. Expected as ISO 8601 datetime.
+ * @param string $end_date
+ *   The latest date in the search string. Expected as ISO 8601 datetime.
+ *
+ * @return array
+ *   List of orders that have been shipped with in the period in the search.
+ */
+function promail_get_shipping_activity($start_date, $end_date) {
+  $params = array(
+    'StartDate' => $start_date,
+    'EndDate' => $end_date,
+  );
+
+  $get_shipping_activity = array();
+  $get_shipping_activity['method'] = 'GetShippingActivity';
+  $get_shipping_activity['params'] = $params;
+
+  $result = _promail_connect($get_shipping_activity);
+
+  return $result;
+}
+
+/**
+ * AddPreRegisteredUser function.
+ *
+ * @param array $form_state
+ *   The $form_state array as passed from the source form.
+ *
+ * @return string
+ *   XML "success" message from the Pro-Mail SOAP server.
+ */
+function promail_add_pre_registered_user(array &$form_state) {
+  $values = $form_state['values'];
+  $method_array['method'] = 'AddPreRegisteredUser';
+  $method_array['params'] = array(
+    'user' => array(
+      'ORDOBY' => array(
+        'CustomerID' => $values['user_information']['CustomerID'],
+        'Password' => $values['user_information']['Password'],
+        'OrderEntryView' => array(
+          'SeqID' => 11,
+        ),
+        'Mailer' => array(
+          'Name' => array(
+            'FirstName' => $values['mailer']['name']['FirstName'],
+            'LastName' => $values['mailer']['name']['LastName'],
+            'FullName' => $values['mailer']['name']['FullName'],
+          ),
+          'CompanyInfo' => array(
+            'Name' => $values['mailer']['company']['Name'],
+          ),
+          'Address' => array(
+            'Address1' => $values['mailer']['address']['Address1'],
+            'Address2' => $values['mailer']['address']['Address2'],
+            'Address3' => $values['mailer']['address']['Address3'],
+            'City' => $values['mailer']['address']['City'],
+            'State' => $values['mailer']['address']['State'],
+            'PostalCode' => $values['mailer']['address']['PostalCode'],
+          ),
+          'ContactInfo' => array(
+            'Email' => $values['mailer']['contact']['Email'],
+          ),
+        ),
+      ),
+    ),
+  );
+  $result = _promail_connect($method_array);
+  return $result;
+}
+
+/**
+ * AddOrder function.
+ *
+ * @param array $header
+ *   Contains the Order ID# from the FC site, an Entry Date timestamp, and any
+ *   additional comments.
+ * @param array $money
+ *   Contains the shipping price for the order.
+ * @param array $ordered_by
+ *   Contains information about the user that placed the order.
+ * @param array $offers
+ *   Contains information about each line item in the order. Can (and hopufully
+ *   will) contain multiple values.
+ * @param array $ship_to
+ *   Contains information about the location to which the order will be shipped.
+ *   Can contain multiple values. If NULL, will default to $ordered_by values.
+ * @param array $bill_to
+ *   Contains information about who will get billed for the order. If NULL, will
+ *   default to $ordered_by value.
+ */
+function promail_add_order(array $header, array $money, array $ordered_by, array $offers, array $ship_to = NULL, array $bill_to = NULL) {
+  // Defaults $ship_to and $bill_to to go to $ordered_by if they are NULL.
+  if (!isset($ship_to)) {
+    $ship_to['OrderShipTo']['TaxExempt'] = $ordered_by['TaxExempt'];
+    $ship_to['OrderShipTo']['TaxExemptApproved'] = $ordered_by['TaxExemptApproved'];
+    $ship_to['OrderShipTo']['Commercial'] = $ordered_by['Commercial'];
+    $ship_to['OrderShipTo']['Flag'] = 'OrderedBy';
+    $ship_to['OrderShipTo']['Key'] = 1;
+  }
+  if (!isset($bill_to)) {
+    $bill_to['TaxExempt'] = $ordered_by['TaxExempt'];
+    $bill_to['TaxExemptApproved'] = $ordered_by['TaxExemptApproved'];
+    $bill_to['Commercial'] = $ordered_by['Commercial'];
+    $bill_to['Flag'] = 'OrderedBy';
+  }
+
+  $params = array();
+  $params['order'] = array(
+    'Header' => $header,
+    'Money' => $money,
+    'OrderedBy' => $ordered_by,
+    'ShipTo' => $ship_to,
+    'BillTo' => $bill_to,
+    'Offers' => $offers,
+  );
+
+  $add_order['method'] = 'AddOrder';
+  $add_order['params'] = $params;
+
+  $result = _promail_connect($add_order);
+
+  // Notify administrators if the order fails to be created.
+  if (!$result) {
+    drupal_mail('promail', 'failed_order', variable_get('promail_error_email', 'dev@knowclassic.com'), language_default(), array(
+      'method' => $add_order['method'],
+      'order_number' => $header['ID'],
+    ));
+  }
+
+  return $result;
+}
+
+/**
+ * Query the Promail database.
+ *
+ * @param string $sql
+ *   SQL statement to be executed.
+ * @param array $params
+ *   An array of values with as many elements as there are bound parameters in
+ *   the SQL statement being executed.
+ *
+ * @return array|bool
+ *   Returns an array that corresponds to the executed query; FALSE if the query
+ *   returned no results or an error occurred.
+ */
+function promail_query_promail_db($sql, array $params = array()) {
+  $result = FALSE;
+  $db = new PromailDatabase(array('charset' => 'utf8'));
+  if ($db->connect()) {
+    $result = $db->fetchAll($sql, $params);
+    $db->close();
+  }
+  return $result ? $result : FALSE;
+}
+
+/**
+ * Return all MOD numbers associated with a Pro-Mail order.
+ *
+ * @param string $orderid
+ *   String representing the order for which the search is being done.
+ *
+ * @return array|bool
+ *   Array of MOD numbers; FALSE on failure.
+ */
+function promail_get_mod_numbers($orderid) {
+
+  $query = 'SELECT * FROM INPULL
+    INNER JOIN SYSTEM ON INPULL.SYSTEM_ID = SYSTEM.SYSTEM_ID
+    WHERE SYSTEM.SYSTEM_ID = :system_id AND INPULL_OrderId = :order_id';
+
+  $replace = array(
+    ':system_id' => variable_get('promail_default_system'),
+    ':order_id' => $orderid,
+  );
+
+  $mod_numbers = promail_query_promail_db($query, $replace);
+
+  if (is_array($mod_numbers)) {
+    foreach ($mod_numbers as &$row) {
+      $row = isset($row['INPULL_PPId']) ? NULL : $row['INPULL_Seqid'];
+    }
+    $mod_numbers = array_filter($mod_numbers);
+  }
+
+  return $mod_numbers;
+}
+
+/**
+ * Return the line-item ID associated with a Promail MOD.
+ *
+ * @param string $mod_number
+ *   An MOD number for which to return a line-item ID.
+ *
+ * @return string|bool
+ *   Returns the line-item ID; FALSE on failure.
+ */
+function promail_get_line_item_id_by_mod($mod_number) {
+  if (isset($mod_number)) {
+    $line_item_nid = promail_get_line_item_id_by_mods(array($mod_number));
+    return $line_item_nid !== FALSE ? reset($line_item_nid) : $line_item_nid;
+  }
+  return FALSE;
+}
+
+/**
+ * Return the line-item IDs associated with a Promail MOD.
+ *
+ * @param array $mod_numbers
+ *   An array of MOD numbers for which to return line-item IDs.
+ *
+ * @return array|bool
+ *   Returns an array of line-item IDs; FALSE on failure.
+ */
+function promail_get_line_item_id_by_mods(array $mod_numbers = array()) {
+  $query = 'SELECT SHPORD_Customization FROM dbo.SHPORD WHERE INPULL_Seqid IN (:mod_numbers)';
+  $query = strtr($query, array(':mod_numbers' => implode(',', $mod_numbers)));
+  $mod_details = promail_query_promail_db($query);
+
+  if (is_array($mod_details)) {
+    foreach ($mod_details as &$row) {
+      $promail_custom_fields = strip_tags($row['SHPORD_Customization']);
+      preg_match('/OrderLineNID:\s*(?<line_id>\d+)/', $promail_custom_fields, $matches);
+      $row = $matches['line_id'];
+    }
+    $mod_details = array_filter($mod_details);
+  }
+
+  return $mod_details;
+}

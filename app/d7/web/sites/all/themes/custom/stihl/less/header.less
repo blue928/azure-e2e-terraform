@@ -1,0 +1,159 @@
+// Full size log in logo for large screens.
+@media @normal {
+  .not-logged-in {
+    #navbar {
+      height: 150px;
+
+      #logo {
+        height: 150px;
+
+        img {
+          height: 150px;
+          width: auto;
+        }
+      }
+    }
+  }
+}
+
+#navbar {
+	padding: 0;
+	background: @sidebar;
+  margin-bottom: 0;
+  .logged-in & {
+  	background: @body-bg;
+  }
+	border: none !important;
+	border-radius: 0;
+	@media @small {
+		padding-left: 15px;
+		padding-right: 15px;
+	}
+  @media @normal {
+    .logged-in & {
+      height: 150px;
+      margin: 0;
+    }
+  }
+
+  h2.block-title {
+    display: none;
+  }
+
+	.container-fluid,
+	.navbar-collapse {
+		padding-left: 0;
+		padding-right: 0;
+	}
+
+	#logo {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 50px;
+    img {
+      height: 50px;
+    }
+
+    .logged-in & {
+      background: @stihl;
+      height: 50px;
+      width: 300px;
+      overflow: hidden;
+      .navbar-btn {
+        margin: -13px 0 0 0;
+      }
+      @media @normal {
+        height: 150px;
+        .navbar-btn {
+          margin: 0;
+        }
+      }
+      img {
+          height: 75px;
+          @media @normal {
+            height: 150px;
+            width: 300px;
+          }
+
+      }
+    }
+	}
+
+	.navbar-nav a,
+	.navbar-nav a:hover,
+	.navbar-nav a:focus {
+		background: none;
+		color: @menu-link;
+		transition: opacity .2s ease;
+	}
+	.user-nav {
+		padding-left: 15px;
+		padding-right: 15px;
+		background: @eb;
+	}
+	.main-nav {
+    background: @sidebar;
+    .logged-in & {
+  		background: @body-bg;
+      @media @normal {
+        padding: 25px 15px 25px 325px;
+        height: 88px;
+      }
+      a {
+        color: @sidebar;
+        font-size: 16px;
+        padding: 15px 5px;
+        @media @wide {
+          padding: 15px;
+        }
+      }
+    }
+		padding-right: 15px;
+
+    a {
+      color: @eb;
+    }
+
+
+		.site-search {
+			width: 20%;
+			padding-top: 3px;
+			@media @normal {
+				width: 28%;
+        padding-right: 3.5em;
+			}
+      @media @wide {
+        width: 30%;
+        padding-right: 7.5em;
+      }
+      input {
+        border-radius: 0;
+      }
+      .btn-primary {
+        background: @sidebar;
+        border-color: @sidebar;
+      }
+
+			#edit-actions {
+				margin-top: 0;
+			}
+		}
+      // Margin bottom pushes search out of header.
+      .form-group {
+        margin-bottom: 0;
+      }
+	}
+	.navbar-toggle {
+		background-color: @gray-light;
+		.icon-bar {
+			background-color: @gray-lighter;
+		}
+	}
+	.navbar-nav li {
+		margin-left: 10px;
+		&:hover {
+			opacity: .5;
+		}
+	}
+}

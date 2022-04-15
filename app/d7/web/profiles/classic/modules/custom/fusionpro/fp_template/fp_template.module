@@ -1,0 +1,676 @@
+<?php
+
+/**
+ * @file
+ * Provides Fusion Pro templating node configurations.
+ */
+
+/**
+ * Implements hook_permission().
+ */
+function fp_template_permission() {
+  return array(
+    'administer FusionPro templates' => array(
+      'title' => t('administer FusionPro templates'),
+      'description' => t('Administer FusionPro templating systems'),
+    ),
+    'use PHP for FusionPro templates' => array(
+      'title' => t('use PHP for FusionPro templates'),
+      'description' => t('Use PHP in FusionPro template configurations'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function fp_template_menu() {
+  $links['admin/config/services/fp_template'] = array(
+    'title' => 'FusionPro Templates',
+    'description' => 'Create template configurations for FusionPro.',
+    'page callback' => '_fp_template_admin_settings',
+    'access arguments' => array('administer FusionPro templates'),
+    'file' => 'fp_template.admin.inc',
+  );
+  $links['admin/config/services/fp_template/configurations'] = array(
+    'title' => 'FusionPro Templates',
+    'description' => 'Create template configurations for FusionPro.',
+    'page callback' => '_fp_template_admin_settings',
+    'access arguments' => array('administer FusionPro templates'),
+    'file' => 'fp_template.admin.inc',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  $links['admin/config/services/fp_template/add/%'] = array(
+    'title' => 'Add FusionPro Templates',
+    'description' => 'Add template configurations for FusionPro.',
+    'page callback' => '_fp_template_add_configuration',
+    'page arguments' => array(5),
+    'access arguments' => array('administer FusionPro templates'),
+    'file' => 'fp_template.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'context' => MENU_CONTEXT_INLINE,
+  );
+  $links['admin/config/services/fp_template/clone/%'] = array(
+    'title' => 'Clone FusionPro Templates',
+    'description' => 'Clone template configurations for FusionPro.',
+    'page callback' => '_fp_template_clone_configuration',
+    'page arguments' => array(5),
+    'access arguments' => array('administer FusionPro templates'),
+    'file' => 'fp_template.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'context' => MENU_CONTEXT_INLINE,
+  );
+  $links['admin/config/services/fp_template/remove/%'] = array(
+    'title' => 'Remove FusionPro Templates',
+    'description' => 'Remove template configurations for FusionPro.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_fp_template_remove_configuration', 5),
+    'access arguments' => array('administer FusionPro templates'),
+    'file' => 'fp_template.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'context' => MENU_CONTEXT_INLINE,
+  );
+  $links['admin/config/services/fp_template/toggle/%'] = array(
+    'title' => 'Disable or enable FusionPro Templates',
+    'description' => 'Disable or enable template configurations for FusionPro.',
+    'page callback' => '_fp_template_toggle_configuration',
+    'page arguments' => array(5),
+    'access arguments' => array('administer FusionPro templates'),
+    'file' => 'fp_template.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'context' => MENU_CONTEXT_INLINE,
+  );
+  $links['admin/config/services/fp_template/edit/%'] = array(
+    'title' => 'Edit FusionPro Templates',
+    'description' => 'Edit template configurations for FusionPro.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_fp_template_edit_configuration', 5),
+    'access arguments' => array('administer FusionPro templates'),
+    'file' => 'fp_template.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'context' => MENU_CONTEXT_INLINE,
+  );
+  return $links;
+}
+
+/**
+ * Implements hook_features_api().
+ */
+function fp_template_features_api() {
+  return array(
+    'fp_template' => array(
+      'name' => t('FusionPro templates'),
+      'file' => drupal_get_path('module', 'fp_template') . '/fp_template.features.inc',
+      'default_hook' => 'fp_template_features_default_fp_template',
+      'feature_source' => TRUE,
+    ),
+  );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function fp_template_theme($existing, $type, $theme, $path) {
+  return array(
+    'fp_template_config_display' => array(
+      'render element' => 'keyword_maps',
+      'file' => 'fp_template.admin.inc',
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_extra_fields_alter().
+ */
+function fp_template_field_extra_fields_alter(&$info) {
+  foreach (node_type_get_types() as $bundle) {
+    if (isset($info['node'][$bundle->type]['form']['title'])) {
+      $configs = _fp_template_get_configurations($bundle->type, 1);
+      if (!empty($configs)) {
+        $info['node'][$bundle->type]['form']['pdf_preview'] = array(
+          'label' => t('FusionPro Template'),
+          'description' => t('FusionPro template preview displays.'),
+        );
+        $info['node'][$bundle->type]['display']['pdf_preview'] = array(
+          'label' => t('FusionPro Template'),
+          'description' => t('FusionPro template preview displays.'),
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_node_delete().
+ */
+function fp_template_node_delete(&$node) {
+  // Delete all associated PDFs.
+  _fp_template_delete_node_files($node->nid);
+}
+
+/**
+ * Implements hook_node_revision_delete().
+ */
+function fp_template_node_revision_delete($node) {
+  // Delete all associated PDFs for version.
+  _fp_template_delete_node_version_files($node->nid, $node->vid);
+}
+
+/**
+ * Implements hook_node_insert().
+ */
+function fp_template_node_insert($node) {
+  _fp_template_node_update($node);
+}
+
+/**
+ * Implements hook_node_update().
+ */
+function fp_template_node_update($node) {
+  _fp_template_node_update($node);
+}
+
+/**
+ * Helper function, update (and insert) operations for hook_nodeapi().
+ */
+function _fp_template_node_update(&$node) {
+  // Clear any preexisting files for this node version.
+  _fp_template_delete_node_version_files($node->nid, $node->vid);
+  // Get all associated configurations for this node type.
+  $configs = _fp_template_get_configurations($node->type, 1);
+  foreach ($configs as $config) {
+    // Create all files for each config.
+    $new_file = _fp_template_create_file($node, $config);
+    if (!$new_file) {
+      drupal_set_message('An error occured while creating a PDF for this node.');
+    }
+    else {
+      // Save each.
+      _fp_template_save_node_files($node->nid, $node->vid, $config->cid, $new_file->fid);
+    }
+  }
+}
+
+/**
+ * Implements hook_node_view().
+ */
+function fp_template_node_view($node, $view_mode = 'full') {
+  // Abort if we're in teaser mode.
+  if ($view_mode != 'full') {
+    return;
+  }
+  // Get all files by the node nid, and vid.
+  $files = _fp_template_get_file_by_node_version($node->nid, $node->vid);
+  $pdf_content = array();
+  foreach ($files as $file) {
+    $display = 0;
+    // For each file, where a config exists,
+    // look up the config for display settings.
+    $this_file = _fp_template_get_file($file->fid);
+    $preview_link = base_path() . $this_file->filepath;
+    if ($file->cid != -1) {
+      $config = _fp_template_get_configuration($file->cid);
+      $display = $config->display;
+    }
+    switch ($display) {
+      case 1:
+        // Display as a preview pane (iframe).
+        $pdf_content[] = '<div class="pdf_preview_pane"><iframe width="100%" height="720" border="0" src="' . $preview_link . '#toolbar=0&navpanes=0"></iframe></div>';
+        break;
+
+      case 2:
+        // Display as a clickable download link.
+        $pdf_content[] = '<div class="display_preview_link"><a href="' . $preview_link . '">Click here to preview the file</a></div>';
+        break;
+
+      case 0:
+      default:
+        // No display.
+        break;
+    }
+  }
+  // Display PDF content.
+  if (!empty($pdf_content)) {
+    if (count($pdf_content) > 1) {
+      $pdf_content = theme('item-list', array('items' => $pdf_content));
+    }
+    else {
+      $pdf_content = $pdf_content[0];
+    }
+    $node->content['pdf_preview'] = array(
+      '#value' => $pdf_content,
+      '#weight' => 10,
+    );
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function fp_template_form_alter(&$form, &$form_state, $form_id) {
+  if (strpos($form['#id'], 'node-form') !== FALSE) {
+    $configs = _fp_template_get_configurations($form['type']['#value'], 1);
+    $pdf_content = '';
+    foreach ($configs as $config) {
+      // Walk each and determine display on form features,
+      // be it preview or link or nothing.
+      // preview_display = 0 means we don't want a display at all,
+      // so we skip this one.
+      if (!isset($config->preview_display) || $config->preview_display != 0) {
+        // For each config, add it to the content display.
+        $preview_display = 'NOFILE';
+        $file = _fp_template_get_file_by_node_version_config($form['nid']['#value'], $form['vid']['#value'], $config->cid);
+        if (isset($file->fid) && !empty($file->fid)) {
+          $preview_display = $config->preview_display;
+          $file = _fp_template_get_file($file->fid);
+          $file_link = base_path() . $file->filepath;
+        }
+        // When clicked, submit to 'fp_template_preview'
+        // to retrieve the correct preview link to display.
+        switch ($preview_display) {
+          case 1:
+            // Display as an iframe pane.
+            $display_link = '<div style="display: block;"><iframe width="100%" height="720" border="0" src="' . $file_link . '#toolbar=0&navpanes=0"></iframe></div>';
+            break;
+
+          case 2:
+            // Display as a clickable download link.
+            $display_link = '<div style="display: block;"><a href="' . $file_link . '">Click here to preview the file</a></div>';
+            break;
+
+          default:
+            $display_link = t('No preview file available. Click the preview button to see a preview.');
+            break;
+        }
+        $pdf_content['display_preview_button_' . $config->cid] = array(
+          '#type' => 'submit',
+          '#value' => t('@label', array('@label' => $config->label)),
+          '#cid' => $config->cid,
+          '#limit_validation_errors' => array(),
+          '#ajax' => array(
+            'callback' => '_fp_template_preview',
+            'wrapper' => 'preview-display-' . $config->cid,
+            'method' => 'replace',
+            'effect' => 'fade',
+          ),
+        );
+        $pdf_content['display_preview_pane_' . $config->cid] = array(
+          '#markup' => '<div id="preview-display-' . $config->cid . '" class="display_preview_pane">' . $display_link . '</div>',
+        );
+      }
+    }
+    // Display PDF preview options.
+    if (!empty($pdf_content)) {
+      $form['pdf_preview'] = $pdf_content;
+      $form['pdf_preview']['#type'] = 'fieldset';
+      $form['pdf_preview']['#title'] = t('Preview files');
+      $form['pdf_preview']['#collapsible'] = TRUE;
+      $form['pdf_preview']['#collapsed'] = FALSE;
+      $form['pdf_preview']['#weight'] = 10;
+    }
+  }
+}
+
+/**
+ * Form AHAH handler.
+ */
+function _fp_template_preview($form, &$form_state) {
+  $node = $form_state['node'];
+  $config = _fp_template_get_configuration($form_state['clicked_button']['#cid']);
+  if (empty($node)) {
+    // Error, no node information was returned, we can't map that.
+    return 'Error: No node was found, mapping failed.';
+  }
+  if (empty($config)) {
+    // Error, no config information was returned, we can't map that.
+    return 'Error: No configuration was found, mapping failed.';
+  }
+  // Call FP to get the file. Previewed files are always TEMP,
+  // cleanup will remove them.
+  $new_file = _fp_template_create_file($node, $config, 0);
+  if (!$new_file) {
+    // Error, no file was returned.
+    return 'Error: No file was returned from server.';
+  }
+  else {
+    // Determine which type of data to return.
+    switch ($config->preview_display) {
+      case 1:
+        $output = '<iframe width="100%" height="720" border="0" src="' . base_path() . $new_file->filepath . '#toolbar=0&navpanes=0"></iframe>';
+        break;
+
+      case 2:
+        // Display as a clickable download link.
+        $output = '<a href="' . base_path() . $new_file->filepath . '">Click here to preview the file</a>';
+        break;
+
+      case 0:
+      default:
+        $output = 'Error: No display configuration was found.';
+        break;
+    }
+    return $output;
+  }
+}
+
+/**
+ * Helper function, create a file given node and config.
+ */
+function _fp_template_create_file($node, $config, $status = FILE_STATUS_PERMANENT) {
+  $filepath = _fp_template_get_file_from_fusion_pro($node, $config);
+  if (!$filepath) {
+    // Watchdog has already been entered.
+    // And calling function should handle any user facing error messages.
+    return FALSE;
+  }
+  else {
+    // Create and store the new file.
+    $new_file = array(
+      'uid' => $user->uid,
+      'status' => $status,
+      'timestamp' => REQUEST_TIME,
+      'filemime' => file_get_mimetype(basename($filepath)),
+      'filesize' => filesize($filepath),
+      'filename' => basename($filepath),
+      'filepath' => $filepath,
+    );
+    $new_file = (object) $new_file;
+    file_save($new_file);
+    return $new_file;
+  }
+}
+
+/**
+ * Helper function, execute call to FP to get preview.
+ */
+function _fp_template_get_file_from_fusion_pro($node, $config) {
+  // Pull the basic data from the config.
+  $template_file = $config->template;
+  $file_type = $config->file_type;
+  $pdf_name = uniqid() . '.pdf';
+  if (!empty($config->rename_pattern)) {
+    $token_types = array(
+      'global' => '',
+      'node' => $node,
+    );
+    $pdf_name = token_replace($config->rename_pattern, $token_types);
+  }
+  $data = _fp_template_map_data($node, $config);
+  // Fusion Pro wants an array of data, one per record.
+  $data = array($data);
+  $filename = fusion_pro_get_pdf($template_file, $file_type, $pdf_name, $data, 'fp_template');
+  if (is_array($filename) || empty($filename)) {
+    watchdog('fp_template',
+       'Error occured while creating file for node @nid with config @config.',
+        array('@node' => $node->nid, '@config' => $config->cid),
+        WATCHDOG_ERROR
+    );
+    return FALSE;
+  }
+  else {
+    // Reconstruct the filepath based on FP settings and returned template name.
+    $filepath = variable_get('fusion_pro_pdf_storage_folder', '/preview') . '/' . $filename;
+    return $filepath;
+  }
+}
+
+/**
+ * Helper function, map keywords to strings for fusion pro.
+ */
+function _fp_template_map_data($node, $config) {
+  // Return mapped data as array of string => value.
+  $map_set = $config->keywords;
+  if (!is_array($map_set)) {
+    return array();
+  }
+  foreach ($map_set as $delta => $map) {
+    if ($map->php_type == 1) {
+      // This value comes from PHP included in this field.
+      $value = '';
+      if (isset($map->mapped_value)) {
+        $php_result = eval($map->mapped_value);
+        if ($php_result) {
+          $value = $php_result;
+        }
+      }
+    }
+    else {
+      // This value is mapped token for this node, so we use token to find it.
+      $token_types = array(
+        'global' => '',
+        'node' => $node,
+      );
+      $value = token_replace('[' . $map->mapped_value . ']', $token_types);
+    }
+    $data[$map->keyword] = $value;
+  }
+  return $data;
+}
+
+/**
+ * Database related functions.
+ */
+
+/**
+ * Given a configuration update or save it.
+ */
+function _fp_template_save_configuration(&$config) {
+  $config = (object) $config;
+  if (!empty($config->keywords)) {
+    // Grab keywords from config, use later.
+    $new_keywords = $config->keywords;
+    unset($config->keywords);
+  }
+  if (empty($config->name)) {
+    $config->name = str_replace(' ', '_', drupal_strtolower(trim($config->label)));
+  }
+  // Convert config to object and save or update.
+  if (!empty($config->cid)) {
+    // Delete from the keywords table first.
+    _fp_template_delete_configuration_keywords($config->cid);
+    $return = drupal_write_record('fp_template', $config, 'cid');
+  }
+  else {
+    $return = drupal_write_record('fp_template', $config);
+  }
+  // Done with save or update. Now save new keywords.
+  if (!empty($new_keywords)) {
+    foreach ($new_keywords as $delta => $map_set) {
+      $map_set = (object) $map_set;
+      $map_set->cid = $config->cid;
+      unset($map_set->kid);
+      _fp_template_save_configuration_keyword($map_set);
+    }
+  }
+  // Update config to return ALL values.
+  $config = _fp_template_get_configuration($config->cid);
+  return $return;
+}
+
+/**
+ * Given a keyword set save it.
+ */
+function _fp_template_save_configuration_keyword(&$map_set) {
+  $map_set = (object) $map_set;
+  if (!empty($map_set->kid)) {
+    drupal_write_record('fp_template_keywords', $map_set, 'kid');
+  }
+  else {
+    drupal_write_record('fp_template_keywords', $map_set);
+  }
+}
+
+/**
+ * Delete a configuration.
+ */
+function _fp_template_delete_configuration($cid) {
+  // Delete from the keywords and files tables first.
+  _fp_template_delete_configuration_keywords($cid);
+  _fp_template_delete_configuration_files($cid);
+  // Then delete the configuration.
+  db_delete('fp_template')
+    ->condition('cid', array($cid))
+    ->execute();
+}
+
+/**
+ * Delete a configuration's keywords.
+ */
+function _fp_template_delete_configuration_keywords($cid) {
+  // Delete from the keywords table.
+  db_delete('fp_template_keywords')
+    ->condition('cid', array($cid))
+    ->execute();
+}
+
+/**
+ * Update a configuration's files.
+ */
+function _fp_template_delete_configuration_files($cid) {
+  // If we delete the configuration, we don't want to abandon
+  // the display format for the PDFs. If abandoned,
+  // the files display as per usual file attachments.
+  db_query('UDPATE {fp_template_keywords} SET cid = -1 WHERE cid = :cid', array(':cid' => $cid));
+}
+
+/**
+ * Given a configuration type, get all configs.
+ */
+function _fp_template_get_configurations($content_type = FALSE, $filter_active = FALSE) {
+  // Get configs from table by type.
+  $query = 'SELECT cid FROM {fp_template} WHERE 1=1';
+  $query_args = array();
+  if ($content_type !== FALSE) {
+    $query .= ' AND content_type = :content_type';
+    $query_args[':content_type'] = $content_type;
+  }
+  if ($filter_active !== FALSE && ($filter_active === 1 || $filter_active === 0)) {
+    $query .= ' AND active = ' . $filter_active;
+  }
+  $results = db_query($query, $query_args);
+  // For each config, run _fp_template_get_configuration().
+  $configs = array();
+  foreach ($results as $result) {
+    $configs[] = _fp_template_get_configuration($result->cid);
+  }
+  return $configs;
+}
+
+/**
+ * Get a configuration.
+ */
+function _fp_template_get_configuration($id) {
+  // Get config from table.
+  $results = db_query('SELECT cid, name, label, content_type, display, preview_display, file_type, template, rename_pattern, active FROM {fp_template} ' .
+    'WHERE cid = :id OR name = :id',
+    array(':id' => $id));
+  // For each config, run _fp_template_get_configuration().
+  $config = array();
+  foreach ($results as $result) {
+    $config = $result;
+    $cid = $config->cid;
+  }
+  // Get related keyword to value matches.
+  $results = db_query('SELECT kid, cid, keyword, php_type, mapped_value FROM {fp_template_keywords} ' .
+    'WHERE cid = :cid', array(':cid' => $cid));
+  // For each config, run _fp_template_get_configuration().
+  foreach ($results as $result) {
+    $config->keywords[] = $result;
+  }
+  return $config;
+}
+
+/**
+ * Save a new file.
+ */
+function _fp_template_save_node_files($nid, $vid, $cid, $fid) {
+  // Always an insert, we can have multiple files
+  // per node but not more than one vid Per file.
+  _fp_template_delete_file($fid);
+  $new_file->nid = $nid;
+  $new_file->vid = $vid;
+  $new_file->cid = $cid;
+  $new_file->fid = $fid;
+  drupal_write_record('fp_template_files', $new_file);
+}
+
+/**
+ * Delete a file.
+ */
+function _fp_template_delete_node_files($nid) {
+  $files = _fp_template_get_file_by_node($nid);
+  foreach ($files as $file) {
+    _fp_template_delete_file($file->fid);
+  }
+}
+
+/**
+ * Delete a file.
+ */
+function _fp_template_delete_node_version_files($nid, $vid) {
+  $files = _fp_template_get_file_by_node_version($nid, $vid);
+  foreach ($files as $file) {
+    _fp_template_delete_file($file->fid);
+  }
+}
+
+/**
+ * Delete a file and cleanup directory.
+ */
+function _fp_template_delete_file($fid) {
+  db_delete('fp_template_files')
+    ->condition('fid', array($fid))
+    ->execute();
+  // Let garbage collection clean it up.
+  $file = file_load($fid);
+  file_delete($file);
+}
+
+/**
+ * Get a file from the files table.
+ */
+function _fp_template_get_file($fid) {
+  return file_load($fid);
+}
+
+/**
+ * Given a node get files.
+ */
+function _fp_template_get_file_by_node($nid) {
+  // Get config from table.
+  $results = db_query('SELECT nid, vid, cid, fid FROM {fp_template_files} ' .
+    'WHERE nid = :nid', array(':nid' => $nid));
+  $files = array();
+  foreach ($results as $result) {
+    $files[] = $result;
+  }
+  return $files;
+}
+
+/**
+ * Given a node and version get files.
+ */
+function _fp_template_get_file_by_node_version($nid, $vid) {
+  // Get config from table.
+  $results = db_query('SELECT nid, vid, cid, fid FROM {fp_template_files} ' .
+    'WHERE nid = :nid AND vid = :vid', array(':nid' => $nid, ':vid' => $vid));
+  $files = array();
+  foreach ($results as $result) {
+    $files[] = $result;
+  }
+  return $files;
+}
+
+/**
+ * Given a node and version get files.
+ */
+function _fp_template_get_file_by_node_version_config($nid, $vid, $cid) {
+  // Get config from table.
+  $results = db_query('SELECT nid, vid, cid, fid FROM {fp_template_files} ' .
+    'WHERE nid = :nid AND vid = :vid AND cid = :cid',
+    array(':nid' => $nid, ':vid' => $vid, ':cid' => $cid));
+  $files = array();
+  foreach ($results as $file) {
+    return $file;
+  }
+}

@@ -1,0 +1,7 @@
+base theme = boron
+name = Muggsy
+description = Sub-theme of <a href="http://drupal.org/project/boron">boron</a> that adds in some other best practices largely inspired by html5 boilerplate.
+core = 7.x
+screenshot = screenshot.png
+engine =  phptemplate
+stylesheets[all][] = css/normalize.css

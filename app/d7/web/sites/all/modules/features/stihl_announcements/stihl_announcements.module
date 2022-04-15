@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Stihl Announcements feature.
+ */
+
+include_once 'stihl_announcements.features.inc';

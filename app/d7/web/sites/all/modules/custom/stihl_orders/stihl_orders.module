@@ -1,0 +1,1260 @@
+<?php
+
+/**
+ * @file
+ * Install file for stihl_products custom module.
+ */
+
+/**
+ * Define private data export uri.
+ */
+define('STIHL_ORDERS_APPROVAL_URI', 'public://approval-csv/');
+define('STIHL_ORDERS_UPC_TEMPLATE_CONFIG', 'UPC Books');
+define('STIHL_ORDERS_HOTFOLDER_URI', 'private://hangtag-proofs/');
+define('STIHL_ORDERS_PROOF_URI', 'public://hangtag-proofs/');
+define('STIHL_ORDERS_PRINT_URI', 'private://hangtag-print/');
+
+/**
+ * Implements hook_menu().
+ *
+ * @TODO: Add correct permissions to 'access arguments'.
+ */
+function stihl_orders_menu() {
+  // Step 1 in the ordering process.
+  $items['orders/new'] = array(
+    'title' => 'Create Order',
+    'type' => MENU_NORMAL_ITEM,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_stihl_orders_new_order_form'),
+    'access callback' => 'stihl_orders_order_access',
+    'access arguments' => array('create order'),
+    'file' => 'inc/create_new_order.inc',
+  );
+
+  // Step 2 in the ordering process.
+  $items['orders/edit/%'] = array(
+    'title' => 'Select Hang Tag Items',
+    'type' => MENU_NORMAL_ITEM,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_stihl_orders_render_edit_line_items_form', 2),
+    'access callback' => 'stihl_orders_order_submitted_access_callback',
+    'access arguments' => array(2),
+    'file' => 'inc/edit_order.inc',
+  );
+
+  $items['orders/cancel/%'] = array(
+    'title' => 'Cancel Order',
+    'type' => MENU_NORMAL_ITEM,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('stihl_orders_cancel_order', 2),
+    'access callback' => 'stihl_orders_order_access',
+    'access arguments' => array('cancel order'),
+    'file' => 'inc/edit_order.inc',
+  );
+
+  // Step 3 in the ordering process.
+  $items['orders/configure/%'] = array(
+    'title' => 'Configure Hang Tag Items',
+    'type' => MENU_NORMAL_ITEM,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_stihl_orders_render_configure_line_items_form', 2),
+    'access callback' => 'stihl_orders_order_submitted_access_callback',
+    'access arguments' => array(2),
+    'file' => 'inc/configure_order.inc',
+  );
+
+  // Step 4 in the ordering process.
+  $items['orders/submit/%'] = array(
+    'title' => 'Order Summary',
+    'type' => MENU_NORMAL_ITEM,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_stihl_orders_submit_order_form', 2),
+    'access callback' => 'stihl_orders_order_access',
+    'access arguments' => array('edit order'),
+    'file' => 'inc/submit_order.inc',
+  );
+
+  // Step 5 in the ordering process.
+  $items['orders/confirmation/%'] = array(
+    'title' => 'Confirmation',
+    'type' => MENU_NORMAL_ITEM,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_stihl_orders_confirm_order_form', 2),
+    'access callback' => 'stihl_orders_order_access',
+    'access arguments' => array('edit order'),
+    'file' => 'inc/confirm_order.inc',
+  );
+
+  $items['order/review/%'] = array(
+    'title' => 'Review Order for Approval',
+    'type' => MENU_NORMAL_ITEM,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('stihl_orders_review_form', 2),
+    'access callback' => 'stihl_orders_order_access',
+    'access arguments' => array('edit order'),
+    'file' => 'inc/review_order.inc',
+  );
+
+  $items['remove-hangtag/%/%'] = array(
+    'title' => 'Remove Hang Tag Item',
+    'type' => MENU_NORMAL_ITEM,
+    'page callback' => '_stihl_orders_edit_order_delete_line_item',
+    'page arguments' => array(1, 2),
+    'access callback' => 'stihl_orders_order_submitted_access_callback',
+    'access arguments' => array(1),
+    'file' => 'inc/edit_order.inc',
+  );
+
+  $items['orders/add-new-hangtag/%'] = array(
+    'page callback' => '_stihl_orders_add_hangtags_to_order_form',
+    'page arguments' => array(2),
+    'type' => MENU_CALLBACK,
+    'access callback' => 'stihl_orders_order_submitted_access_callback',
+    'access arguments' => array(2),
+    'file' => 'inc/add_hangtag_to_order.inc',
+  );
+  $items['admin/config/stihl/orders'] = array(
+    'title' => 'Orders',
+    'description' => 'Configuration settings for the Stihl Orders module.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('stihl_orders_admin_form'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'inc/stihl_orders.admin.inc',
+  );
+  $items['admin/config/stihl/next-year-pricing'] = array(
+    'title' => 'Enable Next Year Pricing',
+    'description' => 'Configuration setting to enable next year price option.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('stihl_orders_admin_pricing_year_option_form'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'inc/stihl_orders.admin_pricing_year_options.inc',
+  );
+  $items['orders/clone/%'] = array(
+    'page callback' => 'stihl_orders_clone_order_callback',
+    'page arguments' => array(2),
+    'type' => MENU_CALLBACK,
+    'access callback' => 'stihl_orders_order_access',
+    'access arguments' => array('create order'),
+    'file' => 'inc/stihl_orders.clone_order.inc',
+  );
+  $items['upc/%/%'] = array(
+    'page callback' => 'stihl_orders_upc_callback',
+    'page arguments' => array(1, 2),
+    'access callback' => 'stihl_orders_order_access',
+    'access arguments' => array('download upc books'),
+    'file' => 'inc/stihl_orders.upc_book.inc',
+  );
+
+  // POP
+  $items['pop-catalog/orders/cancel/%'] = array(
+    'title' => 'Cancel Order',
+    'type' => MENU_NORMAL_ITEM,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('stihl_orders_cancel_pop_order', 3),
+    'access callback' => 'stihl_orders_order_access',
+    'access arguments' => array('cancel order'),
+    'file' => 'inc/edit_order.inc',
+  );
+  return $items;
+}
+
+/**
+ * Custom function to return markup needed for a bootstrap modal.
+ *
+ * @param string $id
+ *   An ID that will be used as the html ID.
+ * @param string $html
+ *   The html that will be rendered in the form.
+ * @param bool $header
+ *   If the modal should have a header.
+ * @param bool $footer
+ *   If the modal should have a footer.
+ */
+function _stihl_orders_get_modal_markup($id = 'stihl-orders-modal', $html = '', $header = FALSE, $footer = TRUE) {
+  $modal_output = '';
+  $modal_output .= '<div id="' . $id . '" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">';
+
+  if ($header) {
+    $modal_output .= '<div class="modal-header">
+      <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      <h4 class="modal-title">Modal title</h4>
+    </div>';
+  }
+
+  $modal_output .= '<div class="modal-body">
+      <p>One fine body&hellip;</p>
+    </div>';
+
+  if ($footer) {
+    $modal_output .= '<div class="modal-footer">
+      <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-primary">Save changes</button>
+    </div>';
+  }
+
+  $modal_output .= '</div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->';
+
+  return $modal_output;
+}
+
+/**
+ * Function to programmatically change workflow state on an order.
+ *
+ * @param string $order_id
+ *   Order ID.
+ * @param string $new_state_name
+ *   The state to transition into.
+ *
+ * @return bool
+ *   Whether or not the Order was able to be moved to desired state.
+ */
+function _stihl_orders_update_order_workflow_transition($order_id, $new_state_name) {
+  global $user;
+  // Get Workflow ID for 'Order Status' workflow.
+  $wid = array_search('Order Status', workflow_get_workflow_names());
+  $state_names = workflow_get_workflow_state_names($wid);
+
+  $emw = entity_metadata_wrapper('commerce_order', $order_id);
+
+  // Check that the requested (new_state_name) exists.
+  if ($new_sid = array_search($new_state_name, $state_names)) {
+    $entity = $emw->value();
+    $entity_type = $emw->type();
+    $field_name = workflow_get_field_name($entity, $entity_type);
+    $current_sid = workflow_node_current_state($entity, $entity_type, $field_name);
+    $comment = 'Order State changed to ' . $new_state_name . ' by ' . $user->name;
+    $uid = $emw->uid->value();
+    $stamp = REQUEST_TIME;
+
+    // Create the transition and execute it.
+    $transition = new WorkflowTransition();
+    $transition->setValues($entity_type, $entity, $field_name, $current_sid, $new_sid, $uid, $stamp, $comment);
+    workflow_execute_transition($entity_type, $entity, $field_name, $transition);
+
+    return TRUE;
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * Get workflow states by workflow name.
+ *
+ * @param string $workflow_name
+ *   The name of the workflow.
+ *
+ * @return array
+ *   An associative array of workflow states keyed by name.
+ */
+function stihl_orders_get_states_by_workflow($workflow_name = 'order_status') {
+  $wid = array_search($workflow_name, workflow_get_workflow_names());
+  $states = workflow_get_workflow_state_names($wid);
+  return !empty($states) ? array_flip($states) : $states;
+}
+
+/**
+ * Get product price by the year in the order.
+ *
+ * The user can select pricing by year during the order process.
+ * This query extracts the price by the year in the order.
+ *
+ * @param int $bid
+ *   The id of the BD location.
+ * @param string $sku
+ *   The sku (hangtag code) of the product.
+ * @param int $order_year
+ *   The year the user selected during the order process.
+ *
+ * @return mixed
+ *   Returns the price for the product.
+ */
+function stihl_orders_get_product_price_by_year($bid, $sku, $order_year) {
+
+  // Determine pricing table column based on the year selected in the order.
+  $price_year = stihl_orders_get_price_year_column($order_year);
+
+  $result = db_select('stihl_pricing')
+    ->fields('stihl_pricing', array($price_year))
+    ->condition('bd_reference', $bid)
+    ->condition('hangtag_code', $sku)
+    ->execute()
+    ->fetchField();
+
+  return $result;
+}
+
+/**
+ * Determine the column name to query pricing based on year.
+ *
+ * @param int $order_year
+ *   The year the user selected during the order process.
+ *
+ * @return string
+ *   The column name to query in the stihl_pricing table.
+ */
+function stihl_orders_get_price_year_column($order_year) {
+  $current_year = format_date(REQUEST_TIME, 'custom', 'Y');
+  return ($current_year == $order_year) ? 'current_year_price' : 'next_year_price';
+}
+
+/**
+ * Get list of SKUs that a current BD has pricing data for.
+ *
+ * @param int $bid
+ *   The id of the BD location.
+ *
+ * @return array
+ *   Returns an array of SKUs that a BD has pricing data for.
+ */
+function stihl_orders_get_powerchord_sku_data($bid) {
+  $result = db_select('stihl_pricing')
+    ->fields('stihl_pricing', array('hangtag_code'))
+    ->condition('bd_reference', $bid)
+    ->execute()
+    ->fetchAllAssoc('hangtag_code');
+
+  $result = array_keys($result);
+
+  return $result;
+}
+
+/**
+ * Gets an array of product SKUs for a given BD.
+ *
+ * Returns SKUs if the BD has pricing for the product in stihl_pricing table.
+ *
+ * @param int $bd_id
+ *   The BD id.
+ *
+ * @return array
+ *   An array possibly containing SKUs a BD has pricing for.
+ */
+function stihl_orders_get_product_skus_by_bd($bd_id) {
+
+  $cache_id = 'stihl_orders:product_skus_' . $bd_id;
+
+  if ($cached = cache_get($cache_id)) {
+    return $cached->data;
+  }
+
+  // Query for products with stihl_pricing requirements.
+  $sql = 'SELECT cp.sku FROM {commerce_product} cp
+    INNER JOIN stihl_pricing sp ON cp.sku = sp.hangtag_code
+    WHERE cp.status = 1
+    AND sp.bd_reference = :bd_id
+    AND sp.display_product = 1';
+
+  $query = db_query($sql, array(':bd_id' => $bd_id));
+
+  $result = $query->fetchCol('sku');
+
+  if (!empty($result)) {
+    cache_set($cache_id, $result, 'cache', strtotime('+7 days'));
+  }
+
+  return $result;
+}
+
+/**
+ * Write a row of data to a csv file.
+ *
+ * If creating a new file, a header row will be created.
+ *
+ * @param array $file_paths_array
+ *   An array of file paths to write to.
+ * @param array $fields
+ *   An associative array key by column names.
+ */
+function stihl_orders_write_row_to_csv(array $file_paths_array, array $fields) {
+
+  // For each file path, write data to csv file.
+  array_walk($file_paths_array, function ($file_path) use ($fields) {
+
+    // Determine if this file already exists.
+    $file_exists = file_exists($file_path) && filesize($file_path) > 0;
+
+    // Attempt to create a file resource.
+    $file_pointer = stihl_orders_attempt_file_resource($file_path, 'a');
+
+    // If successful file resource, write data to the csv file.
+    if ($file_pointer) {
+      // If new file, write header row first.
+      if (!$file_exists) {
+        fputcsv($file_pointer, array_keys($fields));
+      }
+      // Write row data to csv.
+      fputcsv($file_pointer, $fields);
+
+      // Close file resource.
+      fclose($file_pointer);
+    }
+  });
+}
+
+/**
+ * Write a row to a FusionPro csv file.
+ *
+ * The quantity field is determined by the Bulk, Kit 1, or Kit 2.
+ *
+ * @param string $file_path
+ *   The file path to be written.
+ * @param array $fields
+ *   The csv row fields.
+ * @param \EntityMetadataWrapper $line_item
+ *   The line item currently being iterated.
+ */
+function stihl_orders_write_row_to_fusionpro_csv($file_path, array $fields, EntityMetadataWrapper $line_item) {
+
+  // The quantity field for FusionPro is determined by Bulk, Kit 1, and Kit 2.
+  // Interrogate the file name to determine if B, K1, or K2 grouping
+  // then assign the value for the "Quantity" column.
+  if (($bulk = strpos($file_path, 'B')) !== FALSE) {
+    $fields['Quantity'] = $line_item->field_order_bulk->value();
+  }
+  if (($k1 = strpos($file_path, 'K1')) !== FALSE) {
+    $fields['Quantity'] = $line_item->field_kit_1_qty->value();
+  }
+  if (($k2 = strpos($file_path, 'K2')) !== FALSE) {
+    $fields['Quantity'] = $line_item->field_kit_2_qty->value();
+  }
+
+  stihl_orders_write_row_to_csv(array($file_path), $fields);
+}
+
+/**
+ * Attempts to create a file resource.
+ *
+ * This suppresses the error message to the site user on failure.
+ *
+ * @param string $file_path
+ *   The file path of the file.
+ * @param string $mode
+ *   The file mode to use.
+ * @param bool $log
+ *   If this attempt should be logged, defaults to true.
+ *
+ * @return bool|resource
+ *   Returns file pointer of false on failure.
+ */
+function stihl_orders_attempt_file_resource($file_path, $mode, $log = TRUE) {
+
+  // Attempt to open a file resource.
+  $file_pointer = @fopen($file_path, $mode);
+
+  // If file pointer fails, set a watchdog error.
+  if (!$file_pointer && $log == TRUE) {
+    $message = t('Could not open file: !file_path');
+    $replace = array('!file_path' => $file_path);
+    watchdog('stihl_orders', $message, $replace, WATCHDOG_ERROR);
+    return FALSE;
+  }
+  return $file_pointer;
+}
+
+/**
+ * Creates a download link for approval CSV files.
+ *
+ * @param int $order_id
+ *   The ID of the order for the CSV file.
+ *
+ * @return mixed
+ *   Full file url or a translated string if file does not exist.
+ */
+function stihl_orders_approval_csv_download_link($order_id) {
+
+  $order_file_name = "{$order_id}.csv";
+  $order_file_path = STIHL_ORDERS_APPROVAL_URI . $order_file_name;
+
+  // If a file exists, return a download link.
+  if (stihl_orders_attempt_file_resource($order_file_path, 'r', FALSE) !== FALSE) {
+
+    $order_file_url = file_create_url($order_file_path);
+    return l($order_file_name, $order_file_url);
+  }
+  return t('File not available');
+}
+
+/**
+ * Generates links for downloading UPC Books.
+ *
+ * @param int $order_id
+ *   The ID of the order for the UPC Books.
+ *
+ * @return string
+ *   An HTML string containing links to download pricing/no-pricing UPC Books.
+ */
+function stihl_orders_upc_download_links($order_id) {
+
+  $links = [];
+  $links[] = l(t('UPC Book With Pricing'), "upc/{$order_id}/pricing");
+  $links[] = l(t('UPC Book Without Pricing'), "upc/{$order_id}/no-pricing");
+  return implode('<br/>', $links);
+}
+
+/**
+ * Creates a download link for online proofs.
+ *
+ * @param int $order_id
+ *   The ID of the order online proofs.
+ *
+ * @return mixed
+ *   Full file url or FALSE if file does not exist.
+ */
+function stihl_orders_proof_download_link($order_id) {
+
+  // Initiate the StihlOrdersProof class.
+  $proof = stihl_orders_hangtag_proof_init($order_id);
+  $zip = $proof->zip;
+
+  // If a file exists, return a download link.
+  if (stihl_orders_attempt_file_resource($zip, 'r', FALSE) !== FALSE) {
+
+    $order_file_url = file_create_url($zip);
+    return l(basename($zip), $order_file_url);
+  }
+  return FALSE;
+}
+
+/**
+ * Implements hook_action_info().
+ */
+function stihl_orders_action_info() {
+  return array(
+    'stihl_orders_add_hang_tags_action' => array(
+      'type' => 'entity',
+      'label' => t('Add hang tags to an order'),
+      'configurable' => FALSE,
+      // This is important! The behavior dictates what kind of permissions a
+      // user or role will need to access whatever entity is in the view.
+      'behavior' => array('view_property'),
+      'triggers' => array('any'),
+    ),
+  );
+}
+
+/**
+ * Action callback for our bulk operation.
+ */
+function stihl_orders_add_hang_tags_action(&$entity, $context) {
+  $order_id = $context['view_info']['arguments'][0];
+  $order_wrapper = entity_metadata_wrapper('commerce_order', $order_id);
+
+  // Create a new line item from a Product and save it to the Order.
+  $product = commerce_product_load($entity->product_id);
+  $order_wrapper->commerce_line_items[] = stihl_orders_add_line_item($product, $order_id);
+ $a = 1;
+  // This function requires the full entity object, not just the EMW.
+  commerce_order_save($order_wrapper->value());
+}
+
+/**
+ * Implements hook_views_bulk_operations_form_alter().
+ */
+function stihl_orders_views_bulk_operations_form_alter(&$form, &$form_state, $vbo) {
+  if ($vbo->view->name == 'hang_tags') {
+    unset($form['select']['#title']);
+
+    // Tuck the Order ID away in $form_state so we can use it in the redirect to
+    // take us back to the order.
+    $order_id = explode('/', $_GET['q']);
+    $form_state['order_id'] = $order_id[2];
+    $form['select']['return'] = array(
+      '#type' => 'submit',
+      '#value' => t('Return to Order'),
+      '#submit' => array('_stihl_orders_return_to_order'),
+      // By default, VBO disables form submit buttons unless at least one form
+      // element has been selected. The `.vbo-prevent-toggle` class prevents VBO
+      // from disabling this button - allowing the user to return to their order
+      // without selecting any hangtags (or using the browser's "back" button).
+      '#attributes' => array('class' => array('vbo-prevent-toggle')),
+    );
+  }
+}
+
+/**
+ * Convert special characters before sending to Fusion Pro.
+ *
+ * @param string $string
+ *   The string to investigate.
+ *
+ * @return string
+ *   String with the special characters removed, or original string.
+ */
+function stihl_orders_convert_fusionpro_characters($string) {
+  // If no value, don't check for replacements.
+  if (empty($string)) {
+    return $string;
+  }
+  // Array sequence must match $replace below.
+  $pattern = array(
+    '†',
+    '©',
+    '®',
+    '°',
+    '"',
+    '”',
+    '™',
+  );
+  // Array sequence must match $pattern above.
+  $replace = array(
+    '(t)',
+    '(c)',
+    '(r)',
+    '(d)',
+    '(in)',
+    '(in)',
+    '(tm)',
+  );
+
+  return trim(str_replace($pattern, $replace, $string));
+}
+
+/**
+ * Submit callback to redirect users from Add Hang Tags view back to order.
+ */
+function _stihl_orders_return_to_order($form, &$form_state) {
+  $form_state['redirect'] = 'orders/edit/' . $form_state['order_id'];
+}
+
+/**
+ * Rules action function for online proofs for an order.
+ *
+ * @param int $order_id
+ *   The id of the commerce order.
+ */
+function stihl_orders_create_online_proof($order_id, $notify = TRUE) {
+
+  if (!($order = commerce_order_load($order_id))) {
+    $message = 'Attempted to create online proof for non-existent order: @order_id';
+    $replace = array('@order_id' => $order_id);
+    watchdog('stihl_orders', $message, $replace, WATCHDOG_NOTICE);
+    return;
+  }
+
+  // If this order is for UPC books only, we don't need to continue processing.
+  if ($order->field_upc_only[LANGUAGE_NONE][0]['value'] == 'Yes') {
+    _stihl_orders_update_order_workflow_transition($order_id, 'ready for review');
+    return;
+  }
+
+  // Initiate the StihlOrdersProof class.
+  $proof = stihl_orders_hangtag_proof_init($order_id);
+  $proof->notify = $notify != FALSE;
+  $proof->createDataFiles($order);
+}
+
+/**
+ * Remove the online proofs associated with an order.
+ *
+ * @param int $order_id
+ *   The id of the commerce order.
+ */
+function stihl_orders_delete_online_proof($order_id) {
+  // Initiate the StihlOrdersProof class.
+  $proof = stihl_orders_hangtag_proof_init($order_id);
+  $zip = $proof->zip;
+  if (stihl_orders_attempt_file_resource($zip, 'r', FALSE) !== FALSE) {
+    if (file_unmanaged_delete($zip)) {
+      // Log successful removal of proof files.
+      $message = t('Successfully removed proof file(s) for order !order_id');
+      $replace = array('!order_id' => $order_id);
+      watchdog('stihl_orders', $message, $replace, WATCHDOG_INFO);
+    }
+  }
+}
+
+/**
+ * Implements hook_views_data().
+ */
+function stihl_orders_views_data() {
+  $data['commerce_order']['stihl_operations'] = array(
+    'field' => array(
+      'title' => t('Stihl Operations'),
+      'help' => t('Display all the operations links on orders for Stihl users.'),
+      'handler' => 'StihlOrdersHandlerFieldStihlOperations',
+    ),
+  );
+  $data['commerce_order']['stihl_pop_operations'] = array(
+    'field' => array(
+      'title' => t('Stihl POP Operations'),
+      'help' => t('Display all the operations links on orders for Stihl users.'),
+      'handler' => 'StihlOrdersHandlerFieldStihlPopOperations',
+    ),
+  );
+  $data['commerce_order']['pop_order_name'] = array(
+    'title' => t('POP Order Name'),
+    'help' => t('Returns the order title with a contextual, order status based link.'),
+    'field' => array(
+      'handler' => 'StihlOrdersHandlerPopOrderName',
+    ),
+  );
+  $data['commerce_order']['order_name'] = array(
+    'title' => t('Order Name'),
+    'help' => t('Returns the order title with a contextual, order status based link.'),
+    'field' => array(
+      'handler' => 'StihlOrdersHandlerOrderName',
+    ),
+  );
+  $data['commerce_order']['pricing_year_reference'] = array(
+    'field' => array(
+      'title' => t('Pricing Year'),
+      'help' => t('Returns pricing_year value for Pricing Year associated with an order.'),
+      'handler' => 'StihlOrdersHandlerPricingYearReference',
+    ),
+  );
+  return $data;
+}
+
+/**
+ * Implements hook_views_pre_render().
+ */
+function stihl_orders_views_pre_render(&$view) {
+
+  // Examine each row in the 'my_orders' view and determine if an order is
+  // a "standard" order or a "UPC Only" order.
+  if ($view->name == 'my_orders') {
+    foreach ($view->result as $index => $row) {
+      $order = commerce_order_load($row->order_id);
+      if (!empty($order->field_upc_only) && $order->field_upc_only[LANGUAGE_NONE][0]['value'] == 'Yes') {
+        // Prepend "UPC Book Only" to the order's notes to visibly distinguish
+        // "UPC Only" orders from "Standard" orders.
+        $row->field_field_order_notes[0]['rendered']['#prefix'] = '<span class="text-muted">' . t('UPC Book Only') . '<br/></span>';
+      }
+    }
+  }
+}
+
+/**
+ * Sort fieldsets on an order based on the order of taxonomy terms.
+ *
+ * @param array $form
+ *   The form being built.
+ * @param int $vid
+ *   The vocabulary ID that the taxonomy terms belong to.
+ */
+function _stihl_orders_sort_by_term(&$form, $vid) {
+  // Get the first level of the taxonomy tree.
+  $tax_tree = taxonomy_get_tree($vid, 0, 1);
+
+  // Also get the first level of the menu into a array.
+  $menu_name = "menu-product-categories";
+  $side_menu_tree = menu_tree_all_data($menu_name, NULL, 1);
+
+  // Get menu item titles into an array.
+  $menu_keys = array();
+  foreach ($side_menu_tree as $menu_item) {
+    $menu_keys[] = $menu_item['link']['title'];
+  }
+
+  // Get taxonomy term ids into an array.
+  $taxonomy_keys = array();
+  foreach ($tax_tree as $tax) {
+    $taxonomy_keys[$tax->tid] = $tax->name;
+  }
+
+  // Ensure that all items in the terms are in the menu.
+  // Accounting for possibly disabled items.
+  $intersecting_terms = array_intersect($taxonomy_keys, $menu_keys);
+
+  // Array replace to join the two array, while preserving the term ids and the
+  // sorting order.
+  $term_order = array_replace(array_flip($menu_keys), array_flip($intersecting_terms));
+
+  // Ensure that only keys in the fieldsets are used.
+  // - Not every order will have ALL the taxonomy terms.
+  // - So we want to ensure that we get rid of taxonomy term keys that don't
+  //   exist in the order.
+  $intersect = array_intersect_key(array_flip($term_order), $form['fieldsets']);
+
+  // Update the fieldsets in the $form array.
+  // The $form variable is passed by reference.
+  $form['fieldsets'] = array_replace($intersect, $form['fieldsets']);
+}
+
+/**
+ * Custom check to determine whether stihl user can access order pages.
+ */
+function stihl_orders_order_access($op) {
+  global $user;
+  switch ($op) {
+    case 'create order':
+      // Get user roles that have the ability to create orders.
+      $order_create_roles = user_roles(TRUE, 'create commerce_order entities of bundle commerce_order');
+      // Check if the current user has any of those roles.
+      $roles_create_order = array_intersect($order_create_roles, $user->roles);
+      return !empty($roles_create_order) ? TRUE : FALSE;
+
+    case 'edit order':
+      // Get user roles that have the ability to create orders.
+      $order_edit_roles = user_roles(TRUE, 'edit own commerce_order entities of bundle commerce_order');
+      // Check if the current user has any of those roles.
+      $roles_edit_order = array_intersect($order_edit_roles, $user->roles);
+      return !empty($roles_edit_order) ? TRUE : FALSE;
+
+    case 'cancel order':
+      // Get user roles that have the ability to create orders.
+      $order_edit_any_roles = user_roles(TRUE, 'edit any commerce_order entity of bundle commerce_order');
+      // Check if the current user has any of those roles.
+      $roles_edit_any_order = array_intersect($order_edit_any_roles, $user->roles);
+      return !empty($roles_edit_any_order) ? TRUE : FALSE;
+
+    case 'download upc books':
+      if (function_exists($load_template = 'fp_template_configs_load_by_name')) {
+        return empty($load_template(STIHL_ORDERS_UPC_TEMPLATE_CONFIG)) == FALSE;
+      }
+      return FALSE;
+
+    default:
+      return FALSE;
+  }
+}
+
+/**
+ * Hook menu access check for submitted orders.
+ *
+ * A user should only be able to edit an order that is in incomplete status.
+ *
+ * @param int $order_id
+ *   The ID of the order to check status.
+ *
+ * @return bool
+ *   False to deny access if order is in submitted status.
+ */
+function stihl_orders_order_submitted_access_callback($order_id) {
+
+  $order_wrapper = entity_metadata_wrapper('commerce_order', $order_id);
+  try {
+    $order_is_incomplete = $order_wrapper->field_order_status->value() == stihl_orders_get_states_by_workflow()['incomplete'];
+    return user_is_logged_in() && $order_is_incomplete;
+  }
+  catch (Exception $e) {
+    $message = 'Caught exception: @exception. Order #: @order_id is invalid.';
+    $replacements = array('@exception' => $e->getMessage(), '@order_id' => $order_id);
+    watchdog('stihl_orders', $message, $replacements, WATCHDOG_ERROR);
+    return FALSE;
+  }
+}
+
+/**
+ * Implements hook_views_pre_render().
+ */
+function stihl_orders_views_pre_view(&$view) {
+  global $user;
+  $bd_id = stihl_core_get_bd_id($user->uid);
+
+  if ($view->name == "my_orders" && $view->current_display == "page_1") {
+    $view->args[0] = ($bd_id) ? $bd_id : "-1";
+  }
+}
+
+/**
+ * Returns a New Line item with any custom data from the source Product entity.
+ *
+ * @param object $product
+ *   A fully-loaded Product entity object.
+ * @param int $order_id
+ *   And Order ID for a valid Order entity.
+ *
+ * @return object
+ *   A new Line Item entity object containing any custom data.
+ */
+function stihl_orders_add_line_item($product, $order_id) {
+
+  $line_item = commerce_product_line_item_new($product, 1, $order_id);
+
+  // If there is Special Pricing Language for the product, then we want to pass
+  // it on to the Line Item so it can be manipulated and ultimately so FusionPro
+  // can render the data on the Line Item to a hang tag. Otherwise, we don't
+  // to fill the Special Pricing field table with a bunch of blank records.
+  if (isset($product->field_special_pricing_language[LANGUAGE_NONE])) {
+    $line_item->field_special_pricing_language[LANGUAGE_NONE][0]['value'] = $product->field_special_pricing_language[LANGUAGE_NONE][0]['value'];
+  }
+
+  commerce_line_item_save($line_item);
+  $a = 1;
+  return $line_item;
+}
+
+/**
+ * Implements hook_mail().
+ */
+function stihl_orders_mail($key, &$message, $params) {
+  module_load_include('inc', 'stihl_orders', 'inc/stihl_orders.mail');
+  if (function_exists($function = 'stihl_orders_' . $key . '_email')) {
+    $function($message, $params);
+  }
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function stihl_orders_entity_insert($entity, $type) {
+  // When a new commerce order is created send an email to the relevant parties.
+  if ($type == 'commerce_order' && $entity->is_new == TRUE) {
+    $order_wrapper = entity_metadata_wrapper('commerce_order', $entity);
+    $order = commerce_order_load($entity->order_id);
+    $a = 1;
+
+    // updated Nov 5 2021 - don't send hangtag emails if this is
+    // a POP order
+    if($entity->status != 'cart'){
+      stihl_orders_send_order_status_change_email($order_wrapper, 'order_created');
+    }
+  }
+}
+
+/**
+ * Sends the external Order created email.
+ *
+ * @param EntityMetadataWrapper $order_wrapper
+ *   The full Order entity object.
+ */
+function stihl_orders_send_order_status_change_email(EntityMetadataWrapper $order_wrapper, $key) {
+  // On Order creation, send an email to everyone in the Order creator's BD
+  // letting them know that a new order is available to be edited.
+
+  $module = 'stihl_orders';
+  $language = language_default();
+  $user_bd = stihl_core_get_bd_id($GLOBALS['user']->uid);
+  $mail = new StihlCoreMail($user_bd);
+  $from = 'no-reply@knowclassic.com';
+
+  $params = array(
+    'bd_name' => stihl_core_get_bd_name(stihl_core_get_bd_id($GLOBALS['user']->uid)),
+    'order_id' => $order_wrapper->getIdentifier(),
+    'order_name' => $order_wrapper->field_order_title->value(),
+    'order_description' => $order_wrapper->field_order_notes->value(),
+    'order_feedback' => $order_wrapper->field_order_approval_comment->value(),
+    'order_workflow_state' => workflow_get_sid_label($order_wrapper->field_order_status->value()),
+    'order_creator_full_name' => stihl_users_get_full_name($order_wrapper->uid->value()),
+  );
+
+  switch ($key) {
+    case 'order_created':
+    case 'order_submitted':
+    case 'order_approved':
+    case 'order_incomplete':
+    case 'fee_acknowledged':
+      $to = $mail->recipients()->getList();
+      break;
+
+    case 'order_ready_for_review':
+      $to = $mail->recipients()->withAdmin()->getList();
+      $params['bd_name'] = stihl_core_get_bd_name(stihl_core_get_bd_id($order_wrapper->uid->value()));
+      break;
+
+    case 'order_summary':
+      $to = $mail->recipients()->withAdmin()->getList();
+      $params['order_summary'] = stihl_orders_order_summary_email_get_order_summary($order_wrapper);
+      break;
+
+    default:
+      $to = '';
+      $from = '';
+  }
+
+  $send = TRUE;
+  $result = drupal_mail($module, $key, $to, $language, $params, $from, $send);
+  if ($result['result'] == TRUE) {
+    $message = 'Order #: @order_id has been set to @order_workflow_state status; an @key email notification has been sent.';
+    $replacements = array(
+      '@order_id' => $params['order_id'],
+      '@order_workflow_state' => $params['order_workflow_state'],
+      '@key' => $key,
+    );
+    // Log a different message for a fee_acknowledged action.
+    if ($key == 'fee_acknowledged') {
+      $message = 'UPC Download fee acknowledged: @bd_name; a @key email notification has been sent.';
+      $replacements = array(
+        '@bd_name' => $params['bd_name'],
+        '@key' => $key,
+      );
+    }
+    watchdog('stihl_orders', $message, $replacements, WATCHDOG_NOTICE);
+  }
+  else {
+    $message = 'Order status change email not sent for Order #: @order_id';
+    $replacements = array('@order_id' => $params['order_id']);
+    watchdog('stihl_orders', $message, $replacements, WATCHDOG_ERROR);
+  }
+}
+
+/**
+ * Returns the formatted summary for the order summary email.
+ *
+ * @param \EntityMetadataWrapper $order_wrapper
+ *   A Stihl Order order wrapper.
+ *
+ * @return string
+ *   The Summary text to be appended to the order summery email.
+ */
+function stihl_orders_order_summary_email_get_order_summary(EntityMetadataWrapper $order_wrapper) {
+  module_load_include('inc', 'stihl_orders', 'inc/stihl_orders.email_summary');
+  $summary = new StihlOrdersEmailSummary($order_wrapper);
+  $summary_text = $summary->getSummaryText();
+  return $summary_text;
+}
+
+/**
+ * Safely get term ID information for a product line item.
+ *
+ * @param EntityMetadataWrapper $line_item_wrapper
+ *   A Product Line Item EMW object.
+ * @param int $order_id
+ *   The ID for the order being edited.
+ *
+ * @return mixed
+ *   THe term ID for a line item or NULL if there was an issue.
+ */
+function stihl_orders_get_product_line_item_term_id(EntityMetadataWrapper $line_item_wrapper, $order_id) {
+  // If an order has an improperly deleted line item on it, it will pass a Line
+  // Item Wrapper without an ID. When that happens, we want to log the order #
+  // and return NULL so we can skip to the next item.
+  if (!$line_item_wrapper->getIdentifier()) {
+    $missing_lids = db_query('SELECT cli.commerce_line_items_line_item_id FROM {field_data_commerce_line_items} cli LEFT JOIN {commerce_line_item} li ON cli.commerce_line_items_line_item_id = li.line_item_id WHERE cli.entity_id = :order_id AND li.order_id IS NULL', array(':order_id' => $order_id))->fetchAll();
+    $missing_lids = array_map(function ($missing_lid) {
+      return $missing_lid->commerce_line_items_line_item_id;
+    }, $missing_lids);
+    $message = format_plural(count($missing_lids),
+      'Order #@order_id references a non-existent Line Item: @line_items.',
+      'Order #@order_id references @count non-existent Line items: @line_items.',
+      array(
+        '@order_id' => $order_id,
+        '@line_items' => implode(', ', $missing_lids),
+      ));
+    watchdog('stihl_orders', $message, array(), WATCHDOG_ERROR);
+    return NULL;
+  }
+
+  // If an order has a line item that references a product that does not have a
+  // category selected for it, it will throw an exception. We want to capture
+  // the exception, log it, and skip to the next line item.
+  try {
+    $tid = $line_item_wrapper->commerce_product->field_product_category->getIdentifier();
+    return $tid;
+  }
+  catch (Exception $e) {
+    $message = 'An attempt to get information for Line Item #@line_item_id on Order #@order_id failed with error message "@message" in file @file at line @line.';
+    $replacements = array(
+      '@line_item_id' => $line_item_wrapper->getIdentifier(),
+      '@message' => $e->getMessage(),
+      '@file' => $e->getFile(),
+      '@line' => $e->getLine(),
+    );
+    watchdog('stihl_orders', $message, $replacements, WATCHDOG_ERROR);
+    return NULL;
+  }
+}
+
+/**
+ * Implements hook_search_api_alter_callback_info().
+ */
+function stihl_orders_search_api_alter_callback_info() {
+  $callbacks['exclude_unpublished_products'] = array(
+    'name' => t('Exclude Unpublished Products'),
+    'description' => t('Exclude unpublished Products from being included in the search results.'),
+    'class' => 'StihlOrdersExcludeUnpublishedProducts',
+  );
+  return $callbacks;
+}
+
+/**
+ * Implements hook_preprocess_HOOK().
+ */
+function stihl_orders_preprocess_page(&$vars) {
+  if (explode('/', $_GET['q'])[0] == 'orders') {
+    $order_id = $vars['page']['content']['system_main']['#order_id'] ?? NULL;
+    module_load_include('inc', 'stihl_orders', 'inc/stihl_orders.status_bar');
+    $vars['page']['order_status'] = StihlOrdersStatusBar::build($order_id);
+  }
+}
+
+/**
+ * Displays the message set by a product migration.
+ *
+ * If a product migration removes products from an existing incomplete order,
+ * we show the user what SKUs were removed on step 3 and 4 of the order form.
+ * Product migration stores the message value in field_order_migrate_message.
+ *
+ * @param EntityMetadataWrapper $order
+ *   The order wrapper of the order being viewed.
+ *
+ * @return array
+ *   Form element array.
+ */
+function stihl_orders_render_product_removed_message(EntityMetadataWrapper $order) {
+
+  if ($order->field_order_status->value() == stihl_orders_get_states_by_workflow()['incomplete']
+    && $order->field_order_migrate_message->value() != NULL) {
+    return [
+      '#type' => 'markup',
+      '#prefix' => '<div class="bg-warning">',
+      '#suffix' => '</div>',
+      'message' => [
+        '#markup' => $order->field_order_migrate_message->value(),
+        '#prefix' => '<p class="migrate-message">',
+        '#suffix' => '</p>',
+      ],
+    ];
+  }
+}
+
+/**
+ * Implements hook_cron_queue_info().
+ */
+function stihl_orders_cron_queue_info() {
+  return [
+    'create_hangtag_proof' => [
+      'worker callback' => 'stihl_orders_hangtag_proof_worker_callback',
+      'time' => 30,
+    ],
+  ];
+}
+
+/**
+ * Cron worker callback for generating hangtag proofs.
+ *
+ * @param array $data
+ *   An array sent from the cron queue.
+ */
+function stihl_orders_hangtag_proof_worker_callback(array $data) {
+  $proof = stihl_orders_hangtag_proof_init($data['order_id']);
+  if (method_exists($proof, $data['action']) && is_callable([$proof, $data['action']])) {
+    $proof->exec($data);
+  }
+}
+
+/**
+ * Implements hook_cron().
+ */
+function stihl_orders_cron() {
+
+  $current_numerical_month = format_date(REQUEST_TIME, 'custom', 'n');
+
+  // Enable next year pricing option.
+  if (variable_get('cron_next_year_pricing_on', 0)
+    && variable_get('cron_next_year_pricing_on_month', 0) == $current_numerical_month
+    && variable_get('enable_next_year_pricing_option', 0) == FALSE) {
+
+    variable_set('enable_next_year_pricing_option', 1);
+    watchdog('stihl_pricing', 'Next year pricing option was enabled via cron');
+  }
+
+  // Disable next year pricing option.
+  if (variable_get('cron_next_year_pricing_off', 0)
+    && variable_get('cron_next_year_pricing_off_month', 0) == $current_numerical_month
+    && variable_get('enable_next_year_pricing_option', 0) == TRUE) {
+
+    variable_set('enable_next_year_pricing_option', 0);
+    watchdog('stihl_pricing', 'Next year pricing option was disabled via cron');
+  }
+}
+
+/**
+ * Helper function to determine if a user's UPC Book download should be tracked.
+ *
+ * @return bool
+ *   TRUE if the download should be tracked, FALSE otherwise.
+ */
+function stihl_orders_track_download() {
+  // Roles that are allowed to download UPC Books without
+  // incrementing the download counter associated with an order.
+  $allowed_roles = ['classic employee', 'administrator', 'rladmin'];
+  foreach ($allowed_roles as $role) {
+    if ($download_without_tracking = user_has_role(user_role_load_by_name($role)->rid)) {
+      break;
+    }
+  }
+  return $download_without_tracking == FALSE;
+}
+
+/**
+ * Initiate Stihl Orders Proof.
+ *
+ * @param int $order_id
+ *   The ID for the order being proofed.
+ *
+ * @return \StihlOrdersProof
+ *   A new StihlOrdersProof Class.
+ */
+function stihl_orders_hangtag_proof_init($order_id) {
+  module_load_include('inc', 'stihl_orders', 'inc/StihlOrdersProof');
+  return new StihlOrdersProof($order_id);
+}
+
+/**
+ * Implements hook_commerce_cart_product_add()
+ *
+ * When a user that has roles BDUser and POPUser simultaneously,
+ * it's necessary to force the user to finish either their POP order
+ * or their hangtags order
+ */
+function stihl_orders_commerce_cart_product_add($order, $product, $quantity, $line_item) {
+  global $user;
+  $order = $order;
+  $a = 1;
+  $product = $product;
+  $line_item = $line_item;
+  $order_id = commerce_order_load(commerce_cart_order_id($user->uid));
+
+  $a = 1;
+}
+
+/**
+ * Implements hook_user_login()
+ *
+ * Override logins to force redirects to certain pages
+ * based on roles. See ticket # 20111
+ */
+function stihl_orders_user_login(&$edit, $account){
+  global $user;
+
+  $roles = $user->roles;
+  $number_of_roles = count($roles);
+
+  $a = 1;
+
+  // This satisfies the OR condition that a user can have either of two roles
+  // "AND NOTHING ELSE" from a specified combination.
+  if($number_of_roles == 1){
+    if(in_array("POP Admin", $roles) || in_array("POP User", $roles)) {
+      drupal_goto('pop');
+    } elseif (in_array("BDUser", $roles) || in_array("RLadmin", $roles)) {
+      drupal_goto('hangtags');
+    } else {
+      // when a user has only one role and its condition is not satisifed
+      // in the above logic, redirect to the front, which satisfies
+      // the conditions in the table (from the ticket)
+      drupal_goto('<front>');
+    }
+    return;
+  }
+
+  // This satisfies the AND condition that a user has both roles
+  // "AND NOTHING ELSE" from a specified combination.
+  if($number_of_roles == 2){
+    if(in_array("POP Admin", $roles) && in_array("POP User", $roles)) {
+      drupal_goto('pop');
+    } elseif (in_array("BDUser", $roles) && in_array("RLadmin", $roles)) {
+      drupal_goto('hangtags');
+    } else {
+      // when a user two roles and condition are not satisifed
+      // in the above logic, redirect to the front because technically
+      // this is "any other" combination.
+      drupal_goto('<front>');
+    }
+    return;
+  }
+
+  if($number_of_roles > 2){
+    // if a user has "any other" combination of roles, redirect them
+    // to the front
+    drupal_goto('<front>');
+    return;
+  }
+}

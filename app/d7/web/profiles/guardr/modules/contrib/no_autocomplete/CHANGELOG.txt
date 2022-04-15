@@ -1,0 +1,31 @@
+No Autocomplete 7.1.3, 2017-11-21
+---------------------------------
+Changes since 7.x-1.2:
+
+- #2925359 by adriancid: Remove the functionalities that allows to see the drush
+  commands in the module help page.
+- #2908595 by adriancid: Add the summary section to the drush command help.
+- #2892499 by adriancid: Change the drush error codes.
+
+No Autocomplete 7.1.2, 2017-05-22
+---------------------------------
+Changes since 7.x-1.1:
+
+- #2879961 by adriancid: Create the CHANGELOG.txt file.
+- #2879522 by adriancid: Create the module help page.
+- #2879518 by adriancid: Update the README.txt file.
+- #2879520 by adriancid: Create a permission to administer the module.
+- #2879515 by adriancid: Fix coding standard format.
+- #2879253 by adriancid: Drush command to see the status of the variables.
+- #2879250 by adriancid: Drush commands to configure the module.
+
+No Autocomplete 7.1.1, 2015-05-14
+---------------------------------
+Changes since 7.x-1.0:
+
+- #2485743 by dmurphy1, rfay: Drupal 7 admin config menu at the wrong place.
+- #2485117 by dmurphy1, rfay: Adhere to coding standards.
+
+No Autocomplete 7.1.0, 2015-05-07
+---------------------------------
+- Initial release.
