@@ -9,6 +9,6 @@ module "helm-app-module" {
   externalDatabase_database = "${var.project_name}productiondb"
   externalDatabase_user     = "testadmin"
   externalDatabase_password = "T3stpwd@12E"
-  helm_app_name             = "${var.project_name}"
+  helm_app_name             = var.project_name
   cluster_namespace         = "${var.project_name}-ns"
 }
