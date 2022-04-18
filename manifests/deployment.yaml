@@ -15,4 +15,5 @@ spec:
       - image: teststihlcustomacr.azurecr.io/stihl7
         name: stihl7
         ports:
-        - containerPort: 80
+        #- containerPort: 80
+        - containerPort: 443

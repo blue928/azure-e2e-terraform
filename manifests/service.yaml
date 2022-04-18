@@ -4,9 +4,9 @@ metadata:
   name: www-bluepresley-com-svc
 spec:
   ports:
-  - port: 80
+  - port: 443
     protocol: TCP
-    targetPort: 80
+    targetPort: 443
   selector:
     app: www-bluepresley-com-app
   type: ClusterIP

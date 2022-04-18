@@ -1,3 +1,4 @@
+#https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -11,7 +12,7 @@ spec:
       secretName: www-bluepresley-com-tls
   rules:
   - host: bluepresley.com
-    http:
+    https:
       paths:
       - path: /
         pathType: Prefix
@@ -19,5 +20,5 @@ spec:
           service:
             name: www-bluepresley-com-svc
             port:
-              number: 80
+              number: 443
   ingressClassName: nginx
