@@ -6,7 +6,7 @@ spec:
   ports:
   - port: 80
     protocol: TCP
-    targetPort: 48043
+    targetPort: 80
   selector:
     app: test-bluepresley-com
   #type: ClusterIP
