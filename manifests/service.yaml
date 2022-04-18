@@ -9,4 +9,5 @@ spec:
     targetPort: 48043
   selector:
     app: test-bluepresley-com
-  type: ClusterIP
+  #type: ClusterIP
+  type: LoadBalancer
