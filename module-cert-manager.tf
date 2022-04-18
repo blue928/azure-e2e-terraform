@@ -1,4 +1,4 @@
-module "cert_manager" {
+/*module "cert_manager" {
   depends_on = [
     module.aks-cluster,
     module.aks-cluster-required-config,
@@ -8,4 +8,4 @@ module "cert_manager" {
   cert_manager_email     = var.cert_manager_email
   cert_manager_namespace = "cert-manager"
 
-}
+}*/
