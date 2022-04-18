@@ -1,19 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: www-bluepresley-com
+  name: test-bluepresley-com
 spec:
   selector:
     matchLabels:
-      app: www-bluepresley-com
+      app: test-bluepresley-com
   template:
     metadata:
       labels:
-        app: www-bluepresley-com 
+        app: test-bluepresley-com 
     spec:
       containers:
       - image: teststihlcustomacr.azurecr.io/stihl7
         name: stihl7
         ports:
-        #- containerPort: 80
-        - containerPort: 443
+        - containerPort: 80

@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: www-bluepresley-com-svc
+  name: test-bluepresley-com-svc
 spec:
   ports:
   - port: 80
     protocol: TCP
     targetPort: 48043
   selector:
-    app: www-bluepresley-com
+    app: test-bluepresley-com
   type: ClusterIP

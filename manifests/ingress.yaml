@@ -20,6 +20,6 @@ spec:
           backend:
             # This assumes http-svc exists and routes to healthy endpoints
             service:
-              name: www-bluepresley-com-svc
+              name: test-bluepresley-com-svc
               port:
                 number: 80
