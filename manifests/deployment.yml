@@ -1,0 +1,19 @@
+apiVersion : apps/v1
+kind: Deployment
+metadata:
+  name: stihl7 
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stihl7
+  template:
+    metadata:
+      labels:
+        app: stihl7 
+    spec:
+      containers:
+        - name: stihl7 
+          image: teststihlcustomacr.azurecr.io/stihl7
+          ports:
+          - containerPort: 80
