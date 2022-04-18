@@ -12,7 +12,7 @@ spec:
         app: www-bluepresley-com
     spec:
       containers:
-      - image: teststihlcustomacr.azurecr.io/stihl7:238
+      - image: teststihlcustomacr.azurecr.io/stihl7
         name: stihl7
         ports:
         - containerPort: 80
