@@ -1,4 +1,4 @@
-module "drupal-stihl-app1" {
+/*module "drupal-stihl-app1" {
   depends_on = [
     module.aks-cluster,
     module.aks-cluster-required-config,
@@ -19,4 +19,4 @@ module "drupal-stihl-app1" {
   image_registry = "${var.project_name}acr.azurecr.io"
   image_repository = "stihl7"
   image_tag = "238"
-}
+}*/
