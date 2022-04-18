@@ -2,23 +2,24 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: www-bluepresley-com-ingress
-  annotations: 
-    cert-manager.io/cluster-issuer: letsencrypt-prod 
+  name: test-bluepresley-ingress
 spec:
   tls:
     - hosts:
-      - bluepresley.com
-      secretName: www-bluepresley-com-tls
-  rules:
-  - host: bluepresley.com
-    https:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: www-bluepresley-com-svc
-            port:
-              number: 443
+      - test.bluepresley.com
+      # This assumes tls-secret exists and the SSL
+      # certificate contains a CN for foo.bar.com
+      secretName: testbluepresleytls-secret
   ingressClassName: nginx
+  rules:
+    - host: test.bluepresley.com
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            # This assumes http-svc exists and routes to healthy endpoints
+            service:
+              name: www-bluepresley-com-svc
+              port:
+                number: 80
