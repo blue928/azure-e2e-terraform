@@ -7,10 +7,10 @@ metadata:
 spec:
   tls:
     - hosts:
-      - www.bluepresley.com
+      - bluepresley.com
       secretName: www-bluepresley-com-tls
   rules:
-  - host: www.bluepresley.com
+  - host: bluepresley.com
     http:
       paths:
       - path: /
