@@ -9,7 +9,7 @@ spec:
   template:
     metadata:
       labels:
-        app: www-bluepresley-com
+        app: www-bluepresley-com 
     spec:
       containers:
       - image: teststihlcustomacr.azurecr.io/stihl7
