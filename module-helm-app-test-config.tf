@@ -11,4 +11,5 @@ module "helm-app-module" {
   externalDatabase_password = "T3stpwd@12E"
   helm_app_name             = var.project_name
   cluster_namespace         = "${var.project_name}-ns"
+  ingress_hostname = "test.bluepresley.com"
 }
