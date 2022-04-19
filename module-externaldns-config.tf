@@ -3,6 +3,7 @@ module "external_dns" {
     module.azure-rg,
     module.aks-cluster,
     module.aks-cluster-required-config,
+    module.azure-dns,
   ]
   source              = "github.com/blue928/terraform-azurerm-externaldns-module.git"
   resource_group_name = module.azure-rg.resource_group_name
