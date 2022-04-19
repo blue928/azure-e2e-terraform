@@ -11,7 +11,7 @@ module "aks-cluster" {
 
   #todo update places where default is null
   agents_max_count = 3
-  agents_min_count = 1
+  agents_min_count = 1 
 
 
   #role_based_access_control = false
