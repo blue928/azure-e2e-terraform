@@ -2,7 +2,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: test-bluepresley-ingress
+  name: stihl7-ingress
 spec:
   tls:
     - hosts:
@@ -20,6 +20,6 @@ spec:
           backend:
             # This assumes http-svc exists and routes to healthy endpoints
             service:
-              name: test-bluepresley-com-svc
+              name: stihl7
               port:
                 number: 80
