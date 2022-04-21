@@ -10,7 +10,7 @@ resources:
 
 variables:
   # Container registry service connection established during pipeline creation
-  dockerRegistryServiceConnection: '3a521c3c-210b-41c3-a097-9d459965d724'
+  dockerRegistryServiceConnection: 'teststihlcustomacr'
   imageRepository: 'stihl7'
   containerRegistry: 'teststihlcustomacr.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/app/Dockerfile'
