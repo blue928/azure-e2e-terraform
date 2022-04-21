@@ -2,6 +2,10 @@
 # DEPLOY THE AKS KUBERNETES PRODUCTION CLUSTER
 # ---------------------------------------------------------------------------------------------------------------------
 module "aks-cluster" {
+  # TODO clean this up. current config requires DNS server to be deployed first
+  depends_on = [
+    module.azure-dns,
+  ]
 
   source = "github.com/blue928/terraform-azurerm-aks-cluster-module"
 

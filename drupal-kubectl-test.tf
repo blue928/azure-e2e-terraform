@@ -37,8 +37,8 @@ spec:
         app: stihl7 
     spec:
       containers:
-      #- image: teststihlcustomacr.azurecr.io/stihl7
-      - image: drupal:7.89-php7.4-apache-buster
+      - image: teststihlcustomacr.azurecr.io/stihl7:264
+      #- image: drupal:7.89-php7.4-apache-buster
         name: stihl7
         env:
           # Use secret in real usage
