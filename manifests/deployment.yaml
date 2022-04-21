@@ -16,6 +16,7 @@ spec:
       #- image: teststihlcustomacr.azurecr.io/stihl8
       - image: drupal:7.89-php7.4-apache-buster
         name: stihl8
+        imagePullPolicy: Always
         env:
           # Use secret in real usage
         - name: MYSQL_USER

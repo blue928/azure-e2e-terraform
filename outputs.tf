@@ -12,4 +12,5 @@ output "acr_admin_username" {
 
 output "acr_admin_password" {
   value = module.azure-container-registry.admin_password
+  sensitive = true
 }

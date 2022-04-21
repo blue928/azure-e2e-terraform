@@ -7,11 +7,12 @@ resource "kubectl_manifest" "namespace_pvc" {
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: stihl7-pvc
+  name: stihl9-pvc
 spec:
   accessModes:
     - ReadWriteMany
-  storageClassName: aks-file-share-custom-sc-csi
+  #storageClassName: aks-file-share-custom-sc-csi
+  storageClassName: azurefile-csi
   resources:
     requests:
       storage: 10Gi
@@ -29,22 +30,22 @@ resource "kubectl_manifest" "test_drupal" {
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: stihl7
+  name: stihl9
 spec:
   selector:
     matchLabels:
-      app: stihl7
+      app: stihl9
   template:
     metadata:
       labels:
-        app: stihl7 
+        app: stihl9 
     spec:
       containers:
-      - image: teststihlcustomacr.azurecr.io/stihl7:${local.image_tag}
-        name: stihl7
+      - image: teststihlcustomacr.azurecr.io/stihl9:${local.image_tag}
+        name: stihl9
         imagePullPolicy: Always
       #- image: drupal:7.89-php7.4-apache-buster
-        name: stihl7
+        name: stihl9
         env:
           # Use secret in real usage
         - name: MYSQL_USER
@@ -71,12 +72,12 @@ spec:
         ports:
         - containerPort: 80
         volumeMounts:
-        - name: stihl7-pvc
+        - name: stihl9-pvc
           mountPath: /web-assets
       volumes:
-        - name: stihl7-pvc
+        - name: stihl9-pvc
           persistentVolumeClaim:
-            claimName: stihl7-pvc
+            claimName: stihl9-pvc
 YAML
 }
 
@@ -87,7 +88,7 @@ resource "kubectl_manifest" "test_drupal_ingress" {
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: stihl7-ingress
+  name: stihl9-ingress
   annotations: 
     cert-manager.io/cluster-issuer: letsencrypt-prod 
 spec:
@@ -107,7 +108,7 @@ spec:
           backend:
             # This assumes http-svc exists and routes to healthy endpoints
             service:
-              name: stihl7
+              name: stihl9
               port:
                 number: 80
   YAML
@@ -120,14 +121,14 @@ resource "kubectl_manifest" "test_drupal_svc" {
 apiVersion: v1
 kind: Service
 metadata:
-  name: stihl7
+  name: stihl9
 spec:
   ports:
   - port: 80
     protocol: TCP
     targetPort: 80
   selector:
-    app: stihl7
+    app: stihl9
   type: ClusterIP
   #type: LoadBalancer
   YAML
@@ -199,3 +200,26 @@ spec:
 YAML
 }
 
+# docker login secret
+# https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/secret#username-and-password
+/*
+resource "kubernetes_secret_v1" "example" {
+  metadata {
+    name = "acr-cfg"
+  }
+
+  type = "kubernetes.io/dockerconfigjson"
+
+  data = {
+    ".dockerconfigjson" = jsonencode({
+      auths = {
+        "${var.registry_server}" = {
+          #"username" = var.registry_username
+          #"password" = var.registry_password
+          #"email"    = var.registry_email
+          #"auth"     = base64encode("${var.registry_username}:${var.registry_password}")
+        }
+      }
+    })
+  }
+}*/

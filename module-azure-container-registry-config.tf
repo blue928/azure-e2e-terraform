@@ -4,7 +4,7 @@
 locals {
   # Name must be unique across all of Azure
   acr_name          = "${var.project_name}acr"
-  acr_sku           = "Basic"
+  acr_sku           = "Standard"
   acr_admin_enabled = true
 }
 
