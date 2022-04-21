@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bpapp3
+spec:
+  selector:
+    matchLabels:
+      app: bpapp3
+  template:
+    metadata:
+      labels:
+        app: bpapp3
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bpapp3-svc
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: bpapp3
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-bpapp3-svc
+  annotations: 
+    cert-manager.io/cluster-issuer: letsencrypt-prod 
+spec:
+  tls:
+    - hosts:
+      - bpapp3.bluepresley.com
+      secretName: bpapp3-tls
+  rules:
+  - host: bpapp3.bluepresley.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: bpapp3-svc
+            port:
+              number: 80
+  ingressClassName: nginx
+  #tls:
+  #- hosts:
+  #  - sbpapp3.bluepresley.com
+  #  secretName: sapp1-bluepresleycom-secret 

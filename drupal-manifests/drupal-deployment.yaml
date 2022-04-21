@@ -1,21 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: stihl8
+  name: drupal-deployment
 spec:
   selector:
     matchLabels:
-      app: stihl8
+      app: stihl7
+  replicas: 2 # tells deployment to run 2 pods matching the template
   template:
     metadata:
-      #namespace: production-ns
       labels:
-        app: stihl8 
+        app: stihl7
     spec:
       containers:
-      #- image: teststihlcustomacr.azurecr.io/stihl8
-      - image: drupal:7.89-php7.4-apache-buster
-        name: stihl8
+      - name: stihl7
+        image: stihl7
         env:
           # Use secret in real usage
         - name: MYSQL_USER
@@ -35,12 +34,3 @@ spec:
               key: database
         - name: DATABASE_HOST
           value: mariadb
-        ports:
-        - containerPort: 80
-        volumeMounts:
-          - name: stihl8-pvc
-            mountPath: /web-assets
-      volumes:
-        - name: stihl8-pvc
-          persistentVolumeClaim:
-            claimName: stihl8-pvc

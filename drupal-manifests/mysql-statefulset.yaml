@@ -1,23 +1,36 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mariadb
+spec:
+  ports:
+  - port: 3306
+  selector:
+    app: mariadb
+  clusterIP: None
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: stihl8
+  name: mariadb
 spec:
   selector:
     matchLabels:
-      app: stihl8
+      app: mariadb
+  strategy:
+    type: Recreate
   template:
     metadata:
-      #namespace: production-ns
       labels:
-        app: stihl8 
+        app: mariadb
     spec:
       containers:
-      #- image: teststihlcustomacr.azurecr.io/stihl8
-      - image: drupal:7.89-php7.4-apache-buster
-        name: stihl8
+      - image: mariadb:latest
+        name: mariadb
         env:
           # Use secret in real usage
+        - name: MARIADB_RANDOM_ROOT_PASSWORD
+          value: "yes"
         - name: MYSQL_USER
           valueFrom:
             secretKeyRef:
@@ -33,14 +46,13 @@ spec:
             secretKeyRef:
               name: drupalsecrets
               key: database
-        - name: DATABASE_HOST
-          value: mariadb
         ports:
-        - containerPort: 80
+        - containerPort: 3306
+          name: mariadb
         volumeMounts:
-          - name: stihl8-pvc
-            mountPath: /web-assets
+        - name: mysql-persistent-storage
+          mountPath: /var/lib/mysql
       volumes:
-        - name: stihl8-pvc
-          persistentVolumeClaim:
-            claimName: stihl8-pvc
+      - name: mysql-persistent-storage
+        persistentVolumeClaim:
+          claimName: drupal-pvc-mysql
