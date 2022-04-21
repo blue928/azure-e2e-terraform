@@ -41,40 +41,40 @@ stages:
         tags: |
           $(tag)
 
-    - upload: manifests
-      artifact: manifests
+#    - upload: manifests
+#      artifact: manifests
 
-- stage: Deploy
-  displayName: Deploy stage
-  dependsOn: Build
+#- stage: Deploy
+#  displayName: Deploy stage
+#  dependsOn: Build
+#
+#  jobs:
+#  - deployment: Deploy
+#    displayName: Deploy
+#    pool:
+#      vmImage: $(vmImageName)
+#    environment: 'blue928azuree2eterraform.production-ns'
+#    strategy:
+#      runOnce:
+#        deploy:
+#          steps:
+#          - task: KubernetesManifest@0
+#            displayName: Create imagePullSecret
+#            inputs:
+#              action: createSecret
+#              secretName: $(imagePullSecret)
+#              dockerRegistryEndpoint: $(dockerRegistryServiceConnection)
 
-  jobs:
-  - deployment: Deploy
-    displayName: Deploy
-    pool:
-      vmImage: $(vmImageName)
-    environment: 'blue928azuree2eterraform.production-ns'
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - task: KubernetesManifest@0
-            displayName: Create imagePullSecret
-            inputs:
-              action: createSecret
-              secretName: $(imagePullSecret)
-              dockerRegistryEndpoint: $(dockerRegistryServiceConnection)
-
-          - task: KubernetesManifest@0
-            displayName: Deploy to Kubernetes cluster
-            inputs:
-              action: deploy
-              manifests: |
-                $(Pipeline.Workspace)/manifests/deployment.yaml
-                $(Pipeline.Workspace)/manifests/service.yaml
-                $(Pipeline.Workspace)/manifests/ingress.yaml
-              imagePullSecrets: |
-                $(imagePullSecret)
-              containers: |
-                $(containerRegistry)/$(imageRepository):$(tag)
+#          - task: KubernetesManifest@0
+#            displayName: Deploy to Kubernetes cluster
+#            inputs:
+#              action: deploy
+#              manifests: |
+#                $(Pipeline.Workspace)/manifests/deployment.yaml
+#                $(Pipeline.Workspace)/manifests/service.yaml
+#                $(Pipeline.Workspace)/manifests/ingress.yaml
+#              imagePullSecrets: |
+#                $(imagePullSecret)
+#              containers: |
+#                $(containerRegistry)/$(imageRepository):$(tag)
 
