@@ -5,7 +5,7 @@ locals {
   # Name must be unique across all of Azure
   acr_name          = "${var.project_name}acr"
   acr_sku           = "Basic"
-  acr_admin_enabled = false
+  acr_admin_enabled = true
 }
 
 module "azure-container-registry" {
@@ -17,5 +17,5 @@ module "azure-container-registry" {
   acr_admin_enabled   = local.acr_admin_enabled
 
   # todo add service principals later
-  # cluster_to_acr_principal_id = data.azurerm_kubernetes_cluster.modulebase.kubelet_identity[0].object_id
+  #cluster_to_acr_principal_id = data.azurerm_kubernetes_cluster.modulebase.kubelet_identity[0].object_id
 }
