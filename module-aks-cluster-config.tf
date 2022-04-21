@@ -22,5 +22,5 @@ module "aks-cluster" {
   log_analytics_workspace_id = module.container-insights.log_analytics_workspace_id
 
   #attach to acr
-  azurerm_container_registry_id = module.azure-acr.container_registry_id
+  azurerm_container_registry_id = module.azure-container-registry.container_registry_id
 }
