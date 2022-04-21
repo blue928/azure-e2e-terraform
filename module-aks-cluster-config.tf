@@ -20,4 +20,7 @@ module "aks-cluster" {
 
   #role_based_access_control = false
   log_analytics_workspace_id = module.container-insights.log_analytics_workspace_id
+
+  #attach to acr
+  azurerm_container_registry_id = module.azure-acr.container_registry_id
 }
