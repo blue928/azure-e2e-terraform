@@ -1,5 +1,5 @@
 # pvc
-resource "kubectl_manifest" "namespace_pvc" {
+/*resource "kubectl_manifest" "namespace_pvc" {
   yaml_body = <<YAML
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -192,5 +192,5 @@ spec:
     targetPort: 11211
   clusterIP: None
 YAML
-}
+}*/
 
