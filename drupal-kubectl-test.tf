@@ -1,5 +1,8 @@
+locals {
+  image_tag = "latest"
+}
 # pvc
-/*resource "kubectl_manifest" "namespace_pvc" {
+resource "kubectl_manifest" "namespace_pvc" {
   yaml_body = <<YAML
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -37,7 +40,51 @@ spec:
         app: stihl7 
     spec:
       containers:
-      - image: teststihlcustomacr.azurecr.io/stihl7:264
+      - image: teststihlcustomacr.azurecr.io/stihl7:${local.image_tag}
+        name: stihl7
+        imagePullPolicy: Always
+        env:
+        - name: AZURE_STORAGE_ACCOUNT
+          valueFrom:
+            secretKeyRef:
+              name: stihl7-secret
+              key: AZURE_STORAGE_ACCOUNT
+        - name: AZURE_STORAGE_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: stihl7-secret
+              key: AZURE_STORAGE_ACCESS_KEY
+        - name: AZURE_STORAGE_CONTAINER
+          value: stihl7
+        - name: AZURE_STORAGE_CONNECTION_STRING
+          valueFrom:
+            secretKeyRef:
+              name: stihl7-secret
+              key: AZURE_STORAGE_CONNECTION_STRING
+        - name: AZURE_STORAGE_CONTAINER_ROOT
+          valueFrom:
+            secretKeyRef:
+              name: stihl7-secret
+              key: AZURE_STORAGE_CONTAINER_ROOT
+        - name: AZURE_STORAGE_CONTAINER_ROOT_PATH
+          valueFrom:
+            secretKeyRef:
+              name: stihl7-secret
+              key: AZURE_STORAGE_CONTAINER_ROOT_PATH
+        - name: AZURE_STORAGE_CONTAINER_ROOT_PATH_PREFIX
+          valueFrom:
+            secretKeyRef:
+              name: stihl7-secret
+              key: AZURE_STORAGE_CONTAINER_ROOT_PATH_PREFIX
+        - name: AZURE_STORAGE_CONTAINER_ROOT_PATH_SUFFIX
+          valueFrom:
+            secretKeyRef:
+              name: stihl7-secret
+              key: AZURE_STORAGE_CONTAINER_ROOT_PATH_SUFFIX
+        - name: AZURE_STORAGE_CONTAINER_ROOT_PATH_SUFFIX_PREFIX
+          valueFrom:
+            secretKeyRef:
+              name: stih
       #- image: drupal:7.89-php7.4-apache-buster
         name: stihl7
         env:
@@ -192,5 +239,5 @@ spec:
     targetPort: 11211
   clusterIP: None
 YAML
-}*/
+}
 
