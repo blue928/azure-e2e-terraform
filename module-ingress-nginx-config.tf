@@ -1,6 +1,6 @@
 # https://docs.microsoft.com/en-us/azure/aks/ingress-static-ip?tabs=azure-cli#ip-and-dns-label
 
-/*module "ingress-nginx" {
+module "ingress-nginx" {
     depends_on = [
         module.azure-rg,
         module.aks-cluster,
@@ -9,4 +9,4 @@
     ]
   source = "github.com/blue928/terraform-azurerm-ingress-nginx-module"
   chart_version = "4.0.19"  
-}*/
+}
