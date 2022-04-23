@@ -1,6 +1,6 @@
 locals {
   image = "nginx"
-  image_tag = "latest"
+  image_tag = "279"
 
 }
 # pvc
@@ -43,12 +43,10 @@ spec:
         app: stihl9 
     spec:
       containers:
-      - image: drupal
-      #- image: teststihlcustomacr.azurecr.io/stihl9:${local.image_tag}
+      - image: teststihlcustomacr.azurecr.io/stihl7:${local.image_tag}
         name: stihl9
         imagePullPolicy: Always
       #- image: drupal:7.89-php7.4-apache-buster
-        name: stihl9
         env:
           # Use secret in real usage
         - name: MYSQL_USER
