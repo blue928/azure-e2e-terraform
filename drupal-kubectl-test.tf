@@ -1,10 +1,12 @@
 locals {
-  image = "nginx"
-  image_tag = "279"
+  image_registry = "teststihlcustomacr.azurecr.io"
+  image = "stihl7"
+  image_tag = "284"
+  server_name = "stihltest.bluepresley.com" # This is also the drupal hostname. NO trailing slash.
 
 }
 # pvc
-resource "kubectl_manifest" "namespace_pvc" {
+resource "kubectl_manifest" "app_pvc" {
   yaml_body = <<YAML
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -43,7 +45,7 @@ spec:
         app: stihl9 
     spec:
       containers:
-      - image: teststihlcustomacr.azurecr.io/stihl7:${local.image_tag}
+      - image: ${local.image_registry}/${local.image}:${local.image_tag}
         name: stihl9
         imagePullPolicy: Always
       #- image: drupal:7.89-php7.4-apache-buster
@@ -70,6 +72,8 @@ spec:
             secretKeyRef:
               name: drupalsecrets
               key: host
+        - name: DRUPAL_HOSTNAME
+          value: https://${local.server_name}
         ports:
         - containerPort: 80
         volumeMounts:
@@ -95,13 +99,13 @@ metadata:
 spec:
   tls:
     - hosts:
-      - test3.bluepresley.com
+      - ${local.server_name}
       # This assumes tls-secret exists and the SSL
       # certificate contains a CN for foo.bar.com
-      secretName: test3-secret
+      secretName: stihl9-secret
   ingressClassName: nginx
   rules:
-    - host: test3.bluepresley.com
+    - host: ${local.server_name}
       http:
         paths:
         - path: /
@@ -201,26 +205,18 @@ spec:
 YAML
 }
 
-# docker login secret
+# turn off HSTS which conflicts
+resource "kubectl_manifest" "hsts_off" {
+  yaml_body = <<YAML
+apiVersion: v1
+data:
+  hsts: "false"
+kind: ConfigMap
+metadata:
+  name: ingress-nginx-controller
+YAML
+}
+
+# TODO docker login secret
 # https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/secret#username-and-password
-/*
-resource "kubernetes_secret_v1" "example" {
-  metadata {
-    name = "acr-cfg"
-  }
-
-  type = "kubernetes.io/dockerconfigjson"
-
-  data = {
-    ".dockerconfigjson" = jsonencode({
-      auths = {
-        "${var.registry_server}" = {
-          #"username" = var.registry_username
-          #"password" = var.registry_password
-          #"email"    = var.registry_email
-          #"auth"     = base64encode("${var.registry_username}:${var.registry_password}")
-        }
-      }
-    })
-  }
-}*/
+/**/
