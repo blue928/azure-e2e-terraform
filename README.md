@@ -43,6 +43,13 @@ run terraform init -upgrade && terraform validate && terraform plan
 
 - run the same 4 terraform commands again (terraform init -upgrade, terraform validate, terraform plan, terraform apply)
 
-- Next,
+- The test app is installed in the 'default' namespace. You can now interact with the app's pods to deploy the database and further configure the drupal app, if necessary (drush commands).
+- To deploy the database run 'kubectl get pod' to get the name of the app's pod. Copy the database from the local folder to a tmp folder and import the db with mysql. Note, unzip the db.sql file if necessary. mysql only imports from raw .sql files. Execute these commands to get up and running.
+  - kubectl get pod
+  - kubectl cp ./app/db/initdb.d/db.sql stihl9-55b94b5bf5-km5t6:/tmp (Note your pod name will be different per the above command )
+  - kubectl exec --stdin --tty stihl9-55b94b5bf5-km5t6 -- /bin/bash # This will put you inside the pod
+  - mysql -u ${MYSQL_USER} -p${MYSQL_PASSWORD} -h${DATABASE_HOST} ${MYSQL_DATABASE} < /tmp/db.sql (note this takes about 20 min)
+  - drush cc all
+  - drush user-create adminuser --mail="myemail@maddress.edu" --password="UserPw"; drush user-add-role "administrator" adminuser ; drush uli adminuser
 
-- You should now have a full working infrastructure with a test drupal site connected to an external mysql database
+- You should now have a full working infrastructure with drupal site connected to an external mysql database

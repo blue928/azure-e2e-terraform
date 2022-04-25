@@ -636,7 +636,7 @@ $conf['404_fast_html'] = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN"
  */
 # $conf['theme_debug'] = TRUE;
 $conf['reroute_email_enable'] = 1;
-# $conf['reroute_email_address'] = 'michaelb@knowclassic.com,erics@knowclassic.com';
+$conf['reroute_email_address'] = 'bpresley@theimaginegroup.com';
 $conf['reroute_email_whitelist'] = '';
 
 $conf['stihl_pricing_api_enable'] = 0;
@@ -666,4 +666,4 @@ $conf['fusion_pro_pdf_storage_user'] = 'web.stihl.staging';
 $conf['fusion_pro_pdf_storage_pass'] = '2d29236@!^WT5JMM2Vco';
 
 # Online Proof Settings
-$conf['stihl_orders_proofs_failure_slack_channel'] = '#test-alerts';
+# $conf['stihl_orders_proofs_failure_slack_channel'] = '#test-alerts';
