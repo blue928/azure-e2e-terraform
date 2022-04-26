@@ -1,16 +1,3 @@
-1 create a new branch features/stihlclonetest or something
-
-1 change local state file name in main.tf to stihlclonetest.tfstate
-2 change pipeline state file name in the devops portal to stihlclonetest.tfstate to match
-3 change project name to stihlclonetest to match in variables.tf
-
-1) Run terraform init -upgrade && terraform validate && terraform plan && terraform apply -auto-approve
-
-2) When the deploy is finished, you'll see an output variable called 'az_credentials.' Copy and paste that command into the terminal. Once executed, this gives you access to the cluster via 'kubectl'.
-
-3)
-
-3) In the file 'drupal-kubectl-test.tf' uncomment everything, and make sure the locals variables reflect your configuration
 
 ## Pre-flight
 
@@ -33,7 +20,7 @@ run terraform init -upgrade && terraform validate && terraform plan
 
 - login to the registrar for the domain you used. You'll notice in portal.azure.com there is an entry for DNS for the zone you created. If you look at the details it will tell you the four dns servers that microsoft assigned to you. You'll need to edit your domain name entry to reference those 4 dns servers.
 
-- At this point all infrastructure is deployed, including the ACR registry, but not the Drupal app itself.  Go into devops and create the default docker pipeline "build and push image to azure container registry." Fill these out with your credentials. Run the Pipeline to build the Docker image.
+- At this point all infrastructure is deployed, including the ACR registry, but not the Drupal app itself, which requires the ACR to be deployed first.  Go into Devops and create the default docker pipeline "build and push image to azure container registry." Fill these out with your credentials. Run the Pipeline to build the Docker image.
 
 - In Portal.azure.com click on the ACR registry to get the ACR Hostname, repository, image name, and tag.
 
@@ -50,6 +37,15 @@ run terraform init -upgrade && terraform validate && terraform plan
   - kubectl exec --stdin --tty stihl9-55b94b5bf5-km5t6 -- /bin/bash # This will put you inside the pod
   - mysql -u ${MYSQL_USER} -p${MYSQL_PASSWORD} -h${DATABASE_HOST} ${MYSQL_DATABASE} < /tmp/db.sql (note this takes about 20 min)
   - drush cc all
+  - drush dis ldap* -y
+  - drush cc all
   - drush user-create adminuser --mail="myemail@maddress.edu" --password="UserPw"; drush user-add-role "administrator" adminuser ; drush uli adminuser
 
-- You should now have a full working infrastructure with drupal site connected to an external mysql database
+- You should now have a full working infrastructure with the stihl drupal site connected to an external mysql database
+
+- ### TODO
+
+- Configure tighter security for production
+- switch from default namespace to specified namespace for production, test, qa, staging, etc
+- update pipelines to fire with correct admin credentials; deploy into correct namespace based on credentials.
+- integrate ldap access

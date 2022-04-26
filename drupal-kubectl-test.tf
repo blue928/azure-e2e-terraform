@@ -1,7 +1,7 @@
 locals {
   image_registry = "teststihlcustomacr.azurecr.io"
   image = "stihl7"
-  image_tag = "286"
+  image_tag = "288"
   server_name = "stihltest.bluepresley.com" # This is also the drupal hostname. NO trailing slash.
 
 }
