@@ -1,3 +1,4 @@
+/**
 output "az_credentials" {
   value = module.aks-cluster.az_aks_get_credentials
 }
@@ -14,3 +15,4 @@ output "acr_admin_password" {
   value     = module.azure-container-registry.admin_password
   sensitive = true
 }
+*/
