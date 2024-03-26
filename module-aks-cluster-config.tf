@@ -7,8 +7,8 @@ module "aks-cluster" {
     module.azure-dns,
   ]
 
-  source = "github.com/blue928/terraform-azurerm-aks-cluster-module"
-
+  # source = "github.com/blue928/terraform-azurerm-aks-cluster-module"
+  source              = "git::git@github.com:blue928/terraform-azurerm-aks-cluster-module.git"
   resource_group_name = module.azure-rg.resource_group_name
   location            = module.azure-rg.resource_group_location
   cluster_name        = "${var.project_name}-cluster"
@@ -18,8 +18,6 @@ module "aks-cluster" {
   agents_min_count = 1
 
 
-  #role_based_access_control = false
-  log_analytics_workspace_id = module.container-insights.log_analytics_workspace_id
 
   #attach to acr
   azurerm_container_registry_id = module.azure-container-registry.container_registry_id
