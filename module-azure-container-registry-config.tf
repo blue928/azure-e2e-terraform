@@ -9,7 +9,7 @@ locals {
 }
 
 module "azure-container-registry" {
-  source              = "github.com/blue928/azure-container-registry-terraform-module"
+  source = "git::git@github.com:blue928/terraform-azurerm-container-registry-module.git"
   resource_group_name = module.azure-rg.resource_group_name
   location            = module.azure-rg.resource_group_location
   acr_name            = local.acr_name
