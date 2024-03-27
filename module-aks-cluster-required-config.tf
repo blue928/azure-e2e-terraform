@@ -6,7 +6,8 @@ module "aks-cluster-required-config" {
     #data.azurerm_kubernetes_cluster.default,
     module.aks-cluster,
   ]
-  source                         = "github.com/blue928/aks-cluster-required-configuration-terraform-module"
+  #source                         = "github.com/blue928/aks-cluster-required-configuration-terraform-module"
+  source                         = "git::git@github.com:blue928/terraform-aks-cluster-required-configuration-module.git"
   storage_class_cluster_location = module.azure-rg.resource_group_location # Must be the same for the cluster module. 
   lb_public_ip                   = module.aks-cluster.lb_public_ip
   #lets encrypt

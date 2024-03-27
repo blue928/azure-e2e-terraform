@@ -6,7 +6,7 @@ locals {
 }
 
 module "azure-dns" {
-  source              = "github.com/blue928/azure-dns-terraform-module"
+  source = "git::git@github.com:blue928/terraform-azurerm-dns-module.git"
   azure_dns_zone      = local.azure_dns_zone
   resource_group_name = module.azure-rg.resource_group_name
 }
