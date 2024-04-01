@@ -15,7 +15,8 @@ spec:
     spec:
       containers:
       - name: aks-helloworld-one
-        image: mcr.microsoft.com/azuredocs/aks-helloworld:v1
+        # image: mcr.microsoft.com/azuredocs/aks-helloworld:v1
+        image: bitnami/wordpress:latest
         ports:
         - containerPort: 80
         env:

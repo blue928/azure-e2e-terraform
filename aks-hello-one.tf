@@ -1,5 +1,5 @@
 locals {
-  server_name = "bluepresley.com"
+  server_name = "sub.bluepresley.com"
 }
 
 resource "kubernetes_manifest" "one" {
